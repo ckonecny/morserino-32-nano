@@ -23,8 +23,23 @@
 #else
   #define NoOfLines 18
   #ifdef CONFIG_SCROLL_FONT_SIZE
-    #define NoOfVisibleLinesNormal 4
-    #define NoOfVisibleLinesSmall 5   // one more line fits at the small scroll font's genuinely tighter (ASCII-only) line pitch
+    // Both counts are board-overridable for the same reason SCROLL_VISIBLE_LINES exists
+    // below: a shorter panel fits fewer rows than the stock 4/5 at either font size.
+    #ifdef SCROLL_VISIBLE_LINES
+      #define NoOfVisibleLinesNormal SCROLL_VISIBLE_LINES
+    #else
+      #define NoOfVisibleLinesNormal 4
+    #endif
+    #ifdef SCROLL_VISIBLE_LINES_SMALL
+      #define NoOfVisibleLinesSmall SCROLL_VISIBLE_LINES_SMALL
+    #else
+      #define NoOfVisibleLinesSmall 5   // one more line fits at the small scroll font's genuinely tighter (ASCII-only) line pitch
+    #endif
+  #elif defined(SCROLL_VISIBLE_LINES)
+    // Short panels set this from the build: rows are placed at SCROLL_TOP + n*LINE_HEIGHT
+    // with no fit check, so a count the panel cannot show is drawn off the bottom edge and
+    // its text only appears once the scroll moves it up a row.
+    #define NoOfVisibleLines SCROLL_VISIBLE_LINES
   #else
     #define NoOfVisibleLines 4
   #endif

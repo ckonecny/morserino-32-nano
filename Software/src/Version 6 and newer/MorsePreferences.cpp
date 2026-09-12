@@ -492,7 +492,12 @@ parameter MorsePreferences::pliste[] = {
   },
 #ifdef CONFIG_SCROLL_FONT_SIZE
   {
+    // Boards whose panel is too short for the normal font's row count start on Small.
+    #ifdef SCROLL_FONT_DEFAULT_SMALL
+    1, 0, 1, 1,
+    #else
     0, 0, 1, 1,
+    #endif
     "Font Size",
     "Scroll area text size: Normal, or Small for more characters per line",
     true,

@@ -480,14 +480,29 @@ int checkEncoder()
 #ifdef CONFIG_BUTTON_ENCODER
     // Nano build: two buttons substitute for the rotary encoder.
     // Each call reports at most one step to avoid flooding the caller.
-    static bool leftWasDown  = false;
-    static bool rightWasDown = false;
-    bool leftDown  = !digitalRead(encLeftPin);   // D0: active-LOW (hardware pullup)
-    bool rightDown =  digitalRead(encRightPin);  // D2: active-HIGH (hardware pulldown)
-    if (leftDown && !leftWasDown)  { leftWasDown  = true;  return -1; }
-    if (!leftDown)                   leftWasDown  = false;
-    if (rightDown && !rightWasDown){ rightWasDown = true;  return  1; }
-    if (!rightDown)                  rightWasDown = false;
+    // Both edges are debounced by requiring the raw level to hold steady for SETTLE_MS
+    // before it counts. A press-edge-only cooldown is not enough: it has long expired by
+    // the time the button is released, so release bounce reads as a second press --
+    // which is exactly the "one step down, one step up" D2 behaviour.
+    const unsigned long SETTLE_MS = 25;
+    static bool leftRaw = false,  leftStable  = false;
+    static bool rightRaw = false, rightStable = false;
+    static unsigned long leftChangeMs = 0, rightChangeMs = 0;
+    unsigned long now = millis();
+
+    bool l = !digitalRead(encLeftPin);   // D0: active-LOW (hardware pullup)
+    bool r =  digitalRead(encRightPin);  // D2: active-HIGH (hardware pulldown)
+
+    if (l != leftRaw)       { leftRaw = l;  leftChangeMs = now; }
+    else if (l != leftStable && now - leftChangeMs >= SETTLE_MS) {
+        leftStable = l;
+        if (leftStable) return -1;       // one step per settled press
+    }
+    if (r != rightRaw)      { rightRaw = r; rightChangeMs = now; }
+    else if (r != rightStable && now - rightChangeMs >= SETTLE_MS) {
+        rightStable = r;
+        if (rightStable) return  1;
+    }
     return 0;
 #else
     static long int oldPosition = 0;
@@ -619,6 +634,13 @@ pinMode(PIN_VEXT, OUTPUT);
 #ifdef INTERNAL_PULLUP
   pinMode(leftPin, INPUT_PULLUP);          // external keyer left paddle
   pinMode(rightPin, INPUT_PULLUP);         // external keyer right paddle
+#elif defined(CONFIG_BUTTON_ENCODER)
+  // Nano build: the paddle jack has no external pull-ups the way the original board does,
+  // so a plain INPUT floats whenever nothing is plugged in. checkKey() reads that noise as
+  // a held key (dropping straight into Hardware Config at boot) and the keyer turns it into
+  // phantom paddle presses once a mode is running. The key shorts to ground, so pull up.
+  pinMode(leftPin, INPUT_PULLUP);
+  pinMode(rightPin, INPUT_PULLUP);
 #else
   pinMode(leftPin, INPUT);
   pinMode(rightPin, INPUT);

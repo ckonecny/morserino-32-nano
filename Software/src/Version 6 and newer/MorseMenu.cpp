@@ -1218,7 +1218,7 @@ int8_t MorseMenu::selectFilePart() {
         int t = checkEncoder();
         if (t) {
             MorseOutput::pwmClick(MorsePreferences::sidetoneVolume);
-            selected += t;
+            selected += LIST_STEP(t);
             if (selected < 0) selected = 0;
             if (selected >= count) selected = count - 1;
         }
@@ -1340,7 +1340,7 @@ int8_t MorseMenu::selectKochPreviewChar() {
         int t = checkEncoder();
         if (t) {
             MorseOutput::pwmClick(MorsePreferences::sidetoneVolume);
-            selected += t;
+            selected += LIST_STEP(t);
             if (selected < 0) selected = 0;
             if (selected >= count) selected = count - 1;
         }

@@ -473,36 +473,67 @@ void IRAM_ATTR powerpath_isr() {
 */
 uint8_t scrollTop;
 
+#ifdef CONFIG_BUTTON_ENCODER
+// Which level means "pressed" belongs to the pin, not to the direction the button is
+// assigned to: on this board D0 is the BOOT button (hardware pull-up, so active LOW)
+// while D1/D2 have pull-downs (active HIGH). Keeping the two independent is what lets
+// the two directions be swapped in the build config alone.
+#ifdef PIN_ENC_LEFT_ACTIVE_HIGH
+  #define ENC_LEFT_PRESSED   (digitalRead(encLeftPin))
+#else
+  #define ENC_LEFT_PRESSED   (!digitalRead(encLeftPin))
+#endif
+#ifdef PIN_ENC_RIGHT_ACTIVE_HIGH
+  #define ENC_RIGHT_PRESSED  (digitalRead(encRightPin))
+#else
+  #define ENC_RIGHT_PRESSED  (!digitalRead(encRightPin))
+#endif
 
+#endif
 
 int checkEncoder()
 {
 #ifdef CONFIG_BUTTON_ENCODER
     // Nano build: two buttons substitute for the rotary encoder.
-    // Each call reports at most one step to avoid flooding the caller.
-    // Both edges are debounced by requiring the raw level to hold steady for SETTLE_MS
-    // before it counts. A press-edge-only cooldown is not enough: it has long expired by
-    // the time the button is released, so release bounce reads as a second press --
-    // which is exactly the "one step down, one step up" D2 behaviour.
-    const unsigned long SETTLE_MS = 25;
-    static bool leftRaw = false,  leftStable  = false;
-    static bool rightRaw = false, rightStable = false;
-    static unsigned long leftChangeMs = 0, rightChangeMs = 0;
+    // Each call reports at most one step to avoid flooding the caller. Kept local
+    // rather than at file scope because the .ino preprocessor hoists generated
+    // prototypes above any type declared here.
+    struct EncButton { bool raw, stable; unsigned long changeMs, pressMs, repeatMs; };
+    static EncButton encDown = {false, false, 0, 0, 0};
+    static EncButton encUp   = {false, false, 0, 0, 0};
     unsigned long now = millis();
 
-    bool l = !digitalRead(encLeftPin);   // D0: active-LOW (hardware pullup)
-    bool r =  digitalRead(encRightPin);  // D2: active-HIGH (hardware pulldown)
+    // Both edges are debounced by requiring the raw level to hold steady: a cooldown
+    // that only starts at the press edge has long expired by the time the button is
+    // released, so release bounce counts as a second press. Holding then repeats at a
+    // steady rate, so a long press scrolls the way a turned shaft would -- deliberately
+    // without acceleration, since these steps set values (speed, volume) that are as
+    // often nudged by one as run across their whole range.
+    auto step = [now](EncButton &b, bool pressed) -> bool {
+        const unsigned long SETTLE_MS       = 25;   // level must hold this long to count
+        const unsigned long REPEAT_DELAY_MS = 500;  // hold this long before repeat starts
+        const unsigned long REPEAT_MS       = 250;  // then one step per this interval
+        if (pressed != b.raw) {                     // raw edge: restart the settle timer
+            b.raw = pressed;
+            b.changeMs = now;
+            return false;
+        }
+        if (pressed != b.stable && now - b.changeMs >= SETTLE_MS) {
+            b.stable = pressed;
+            if (!b.stable) return false;            // settled release: never a step
+            b.pressMs = b.repeatMs = now;
+            return true;                            // settled press: one step
+        }
+        if (b.stable && now - b.pressMs >= REPEAT_DELAY_MS
+                     && now - b.repeatMs >= REPEAT_MS) {
+            b.repeatMs = now;
+            return true;
+        }
+        return false;
+    };
 
-    if (l != leftRaw)       { leftRaw = l;  leftChangeMs = now; }
-    else if (l != leftStable && now - leftChangeMs >= SETTLE_MS) {
-        leftStable = l;
-        if (leftStable) return -1;       // one step per settled press
-    }
-    if (r != rightRaw)      { rightRaw = r; rightChangeMs = now; }
-    else if (r != rightStable && now - rightChangeMs >= SETTLE_MS) {
-        rightStable = r;
-        if (rightStable) return  1;
-    }
+    if (step(encDown, ENC_LEFT_PRESSED))  return -1;
+    if (step(encUp,   ENC_RIGHT_PRESSED)) return  1;
     return 0;
 #else
     static long int oldPosition = 0;
@@ -627,8 +658,18 @@ pinMode(PIN_VEXT, OUTPUT);
   pinMode(PinCLK,INPUT_PULLUP);
   pinMode(PinDT,INPUT_PULLUP);
 #else
-  pinMode(encLeftPin,  INPUT_PULLUP);  // D0: has hardware pullup, active-LOW
-  pinMode(encRightPin, INPUT);         // D2: has hardware pulldown, active-HIGH
+  // Follow each pin's own polarity (see ENC_LEFT_PRESSED): an active-HIGH pin has a
+  // hardware pull-down and must not get an internal pull-up fighting it.
+#ifdef PIN_ENC_LEFT_ACTIVE_HIGH
+  pinMode(encLeftPin,  INPUT);
+#else
+  pinMode(encLeftPin,  INPUT_PULLUP);
+#endif
+#ifdef PIN_ENC_RIGHT_ACTIVE_HIGH
+  pinMode(encRightPin, INPUT);
+#else
+  pinMode(encRightPin, INPUT_PULLUP);
+#endif
 #endif
   pinMode(keyerPin, OUTPUT);        // we can use the built-in LED to show when the transmitter is being keyed
 #ifdef INTERNAL_PULLUP
@@ -784,13 +825,20 @@ delay(VEXT_SETTLE_MS);   // let the panel supply rail settle before the ST7789 r
   // Setup button timers (all in milliseconds / ms)
   // (These are default if not set, but changeable for convenience)
 
+  // Boards whose buttons are small tactile switches rather than an encoder shaft raise
+  // LONG_CLICK_MS: at the stock 350 ms an ordinary press is already a long click, so the
+  // long-press actions (exit to menu, and the Key ON tuning tone) fire unintentionally.
+#ifndef LONG_CLICK_MS
+  #define LONG_CLICK_MS 350
+#endif
+
   Buttons::modeButton.debounceTime   = 11;   // Debounce timer in ms
   Buttons::modeButton.multiclickTime = 220;  // Time limit for multi clicks
-  Buttons::modeButton.longClickTime  = 350; // time until "held-down clicks" register
+  Buttons::modeButton.longClickTime  = LONG_CLICK_MS; // time until "held-down clicks" register
 
   Buttons::volButton.debounceTime   = 11;   // Debounce timer in ms
   Buttons::volButton.multiclickTime = 220;  // Time limit for multi clicks
-  Buttons::volButton.longClickTime  = 350; // time until "held-down clicks" register
+  Buttons::volButton.longClickTime  = LONG_CLICK_MS; // time until "held-down clicks" register
 #ifndef CONFIG_TFT
   MorseOutput::printOnStatusLine( true, 0, "Init...pse wait...");   /// gives us something to watch while SPIFFS is created at very first start
 #endif
@@ -1484,7 +1532,8 @@ if (morseState == morseKeyer &&
                                     ptr = 0;
                                   dispMem(memList[ptr]);
                                   break;
-           case previewCharMode: changePreviewChar(t);
+           case previewCharMode:  // a position in the Koch course, not a value: see LIST_STEP
+                                  changePreviewChar(LIST_STEP(t));
                                   break;
           }
     } // encoder

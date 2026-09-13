@@ -498,6 +498,17 @@ enum actMessage : int {
 
 extern void DEBUG (const String& s);
 
+// Direction of an encoder step that moves through a LIST rather than setting a value.
+// A turned shaft has no up and down, so both are the same sign there. Two stacked
+// buttons do have one: pressing the upper button means "towards the top of the list",
+// which is a lower index, while for a value (speed, volume) up still means more.
+// Apply only where a step picks a position -- never to anything value-like.
+#ifdef CONFIG_BUTTON_ENCODER
+  #define LIST_STEP(t) (-(t))
+#else
+  #define LIST_STEP(t) (t)
+#endif
+
 // we need this for some strange reason: the min definition breaks with WiFi
 #define _min(a,b) ((a)<(b)?(a):(b))
 #define _max(a,b) ((a)>(b)?(a):(b))

@@ -27,6 +27,14 @@ static LGFX lcd;
 static SSD1306 lcd;
 #endif
 
+// The panel's normal orientation. flipScreenVertically() turns it by 180 degrees from
+// here, so the flip keeps working when a board overrides the default with TFT_ROTATION.
+#ifdef TFT_ROTATION
+#define DW_BASE_ROTATION TFT_ROTATION
+#else
+#define DW_BASE_ROTATION 3
+#endif
+
 
 DisplayWrapper::DisplayWrapper() {
 	currentFont = NULL;
@@ -89,7 +97,7 @@ uint16_t DisplayWrapper::drawString(int16_t x, int16_t y, const String &text) {
 }
 
 void DisplayWrapper::flipScreenVertically(){
-	lcd.setRotation(1);
+	lcd.setRotation((DW_BASE_ROTATION + 2) % 4);	// fixed 1 left a TFT_ROTATION=1 panel unchanged
 }
 
 bool DisplayWrapper::init(){
@@ -102,11 +110,7 @@ bool DisplayWrapper::init(){
 #ifdef SSD1306_DRIVER
 	lcd.setColorDepth(lgfx::palette_1bit);
 #endif
-#ifdef TFT_ROTATION
-	lcd.setRotation(TFT_ROTATION);
-#else
-	lcd.setRotation(3);
-#endif
+	lcd.setRotation(DW_BASE_ROTATION);
 	// lcd.setRotation(2); - ssd1306 m32 normal layout
 	//lcd.setFont(&DialogInput_plain_12);
 	//lcd.setFont(&fonts::AsciiFont8x16);

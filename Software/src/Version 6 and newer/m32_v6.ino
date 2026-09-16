@@ -535,8 +535,11 @@ int checkEncoder()
         return false;
     };
 
-    if (step(encDown, ENC_LEFT_PRESSED))  return -1;
-    if (step(encUp,   ENC_RIGHT_PRESSED)) return  1;
+    // Flip Screen turns the board upside down, which puts the "up" button at the bottom;
+    // swap the directions with it so the upper button still counts up.
+    const int flip = MorsePreferences::leftHanded ? -1 : 1;
+    if (step(encDown, ENC_LEFT_PRESSED))  return -flip;
+    if (step(encUp,   ENC_RIGHT_PRESSED)) return  flip;
     return 0;
 #else
     static long int oldPosition = 0;

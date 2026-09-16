@@ -373,6 +373,9 @@ const uint8_t menuN = 46
 #ifdef LORA_DISABLED
     - 1    // no LoRa Trx entry
 #endif
+#ifdef DECODER_DISABLED
+    - 1    // no CW Decoder entry
+#endif
 #ifdef CONFIG_CW_GAME
     + 5    // Games, Morse Invaders, Fight the Pileup, Radio Cave, Morsel
     + 1    // Trailblazer — see MorseTrailblazer.h
@@ -403,7 +406,11 @@ enum menuNo
 #ifdef CONFIG_QSO_BOT
         _qsoBot, _qsoSotaPota, _qsoStandard, _qsoContest,
 #endif
+#ifndef DECODER_DISABLED
+        // Boards without an audio input leave the decoder out: it would only ever read
+        // a flat line. iCW/Ext Trx keeps its keying; its audio decode reads nothing there.
         _decode,
+#endif
 #ifdef CONFIG_CW_GAME
         _games, _morseInvaders, _fightPileup, _radioCave, _morsel,
 #endif

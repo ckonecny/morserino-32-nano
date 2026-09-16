@@ -123,7 +123,9 @@ const char* const menuText[menuN]  = {
         "SOTA/POTA", "Standard", "Contest",
 #endif
 
+#ifndef DECODER_DISABLED
   "CW Decoder",
+#endif
 #ifdef CONFIG_CW_GAME
 "Games",
     "Morse Invaders", "Fight Pileup", "Radio Cave", "Morsel",
@@ -164,6 +166,20 @@ enum navi {naviLevel, naviLeft, naviRight, naviUp, naviDown };
   #define _wifi_beforeSelect _wifi_update
 #endif
 
+// The top-level ring around "CW Decoder": builds without it close the ring over the gap,
+// from Transceiver straight to Games (or WiFi Functions, when there are no games).
+#ifdef DECODER_DISABLED
+  #define _top_decodeOrTrx _trx
+  #ifdef CONFIG_CW_GAME
+    #define _top_afterTrx _games
+  #else
+    #define _top_afterTrx _wifi
+  #endif
+#else
+  #define _top_decodeOrTrx _decode
+  #define _top_afterTrx _decode
+#endif
+
 bool EspNowIsActive = false;
 
 const uint8_t menuNav [menuN] [5] = {                   // { level, left, right, up, down}
@@ -199,7 +215,7 @@ const uint8_t menuNav [menuN] [5] = {                   // { level, left, right,
   {2,_kochEchoMixed,_kochEchoRand,_kochEcho,0},         // 29 koch echo adaptive  -e
 #ifdef LORA_DISABLED
   #ifdef CONFIG_QSO_BOT
-    {0,_koch,_decode,_dummy,_trxWifi},                  // _trx
+    {0,_koch,_top_afterTrx,_dummy,_trxWifi},                  // _trx
     {1,_qsoBot,_trxIcw,_trx,0},                         // _trxWifi  (left wraps via _qsoBot)
     {1,_trxWifi,_qsoBot,_trx,0},                        // _trxIcw   (right wraps to _qsoBot)
     {1,_trxIcw,_trxWifi,_trx,_qsoSotaPota},             // _qsoBot   (level 1; descends to _qsoSotaPota)
@@ -207,13 +223,13 @@ const uint8_t menuNav [menuN] [5] = {                   // { level, left, right,
     {2,_qsoSotaPota,_qsoContest,_qsoBot,0},             // _qsoStandard
     {2,_qsoStandard,_qsoSotaPota,_qsoBot,0},            // _qsoContest
   #else
-    {0,_koch,_decode,_dummy,_trxWifi},                  // _trx (no LoRa, first child is WiFi)
+    {0,_koch,_top_afterTrx,_dummy,_trxWifi},                  // _trx (no LoRa, first child is WiFi)
     {1,_trxIcw,_trxIcw,_trx,0},                         // _trxWifi  (2-item wrap)
     {1,_trxWifi,_trxWifi,_trx,0},                       // _trxIcw   (2-item wrap)
   #endif
 #else
   #ifdef CONFIG_QSO_BOT
-    {0,_koch,_decode,_dummy,_trxLora},                  // _trx
+    {0,_koch,_top_afterTrx,_dummy,_trxLora},                  // _trx
     {1,_qsoBot,_trxWifi,_trx,0},                        // _trxLora  (left wraps via _qsoBot)
     {1,_trxLora,_trxIcw,_trx,0},                        // _trxWifi
     {1,_trxWifi,_qsoBot,_trx,0},                        // _trxIcw   (right wraps to _qsoBot)
@@ -222,23 +238,27 @@ const uint8_t menuNav [menuN] [5] = {                   // { level, left, right,
     {2,_qsoSotaPota,_qsoContest,_qsoBot,0},             // _qsoStandard
     {2,_qsoStandard,_qsoSotaPota,_qsoBot,0},            // _qsoContest
   #else
-    {0,_koch,_decode,_dummy,_trxLora},                  // _trx (has LoRa)
+    {0,_koch,_top_afterTrx,_dummy,_trxLora},                  // _trx (has LoRa)
     {1,_trxIcw,_trxWifi,_trx,0},                        // _trxLora
     {1,_trxLora,_trxIcw,_trx,0},                        // _trxWifi
     {1,_trxWifi,_trxLora,_trx,0},                       // _trxIcw
   #endif
 #endif
 #ifdef CONFIG_CW_GAME
+#ifndef DECODER_DISABLED
   {0,_trx,_games,_dummy,0},                               // decoder  -e
-  {0,_decode,_wifi,_dummy,_morseInvaders},                 // games
+#endif
+  {0,_top_decodeOrTrx,_wifi,_dummy,_morseInvaders},       // games
   {1,_memoryChain,_fightPileup,_games,0},                    // morse invaders  -e (left wraps via _memoryChain)
   {1,_morseInvaders,_radioCave,_games,0},                    // fight pileup  -e
   {1,_fightPileup,_morsel,_games,0},                         // radio cave  -e
   {1,_radioCave,_trailblazer,_games,0},                     // morsel  -e (right -> Trailblazer)
   {0,_games,_goToSleep,_dummy,_wifi_mac},                   // WiFi
 #else
+#ifndef DECODER_DISABLED
   {0,_trx,_wifi,_dummy,0},                                // decoder  -e
-  {0,_decode,_goToSleep,_dummy,_wifi_mac},                 // WiFi
+#endif
+  {0,_top_decodeOrTrx,_goToSleep,_dummy,_wifi_mac},       // WiFi
 #endif
 #ifdef CONFIG_PRACTICE_STATS
    {1,_wifi_stats,_wifi_config,_wifi,0},                 // 36 Disp Mac  -e!! (left now wraps via Practice Stats)
@@ -993,6 +1013,7 @@ boolean MorseMenu::menuExec() {       // return true if we should  leave menu af
                 Buttons::volButton.clicks  = 0;
                 return false;
 #endif
+#ifndef DECODER_DISABLED
       case  _decode: /// decoder
                 MorsePreferences::setCurrentOptions(MorsePreferences::decoderOptions, MorsePreferences::decoderOptionsSize);
                 morseState = morseDecoder;
@@ -1002,7 +1023,8 @@ boolean MorseMenu::menuExec() {       // return true if we should  leave menu af
                 MorseOutput::printOnScroll(1, REGULAR, 0, "Start Decoder" );
                 if (protocolActive())
                   MorseJSON::jsonCreate("message", "Start Decoder", "");
-      setupDecoder:
+#endif
+      setupDecoder:             // also the tail of iCW/Ext Trx (goto above)
                 speedChanged = true;
                 delay(650);
                 cleanupScreen();

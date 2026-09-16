@@ -811,6 +811,11 @@ void MorseJSON::jsonGetBattery(void) {
     // running on battery cannot be told apart from one on USB, so this stays as
     // it was rather than guessing.
     bat["status"] = "usb powered";
+  #ifdef CONFIG_BATTERY_MAX17048
+    // A fuel gauge measures the cell directly, so its voltage is worth reporting even
+    // though the supply source is still unknown here.
+    bat["voltage"] = batteryVoltage();
+  #endif
 #endif
     MorseJSON::jsonSend(doc);
 }

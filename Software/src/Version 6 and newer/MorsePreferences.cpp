@@ -942,7 +942,7 @@ boolean MorsePreferences::setupPreferences(uint8_t atMenu) {
 
             MorseOutput::refreshDisplay();
           }    // end if (encoderPos)
-#ifdef CONFIG_MCP73871
+#ifdef CONFIG_BATTERY_ICON
           MorseOutput::checkPowerpathState();
           MorseOutput::updateBatteryDisplay();
 #endif
@@ -1672,9 +1672,14 @@ boolean MorsePreferences::adjustKeyerPreference(prefPos pos) {        /// rotati
                                   hwConf += (t+4);
                                   hwConf = hwConf % 4;
                       #endif
-                      #ifdef CONFIG_MCP73871
-                                  if (hwConf == 1)      // no voltage calibration with M32Pocket
-                                      hwConf = 2;
+                      #if defined(CONFIG_MCP73871) || defined(CONFIG_BATTERY_MAX17048)
+                                  // No voltage calibration where a battery chip measures the
+                                  // cell itself (M32 Pocket, MAX17048 boards). Skip the slot in
+                                  // the direction of travel: always landing on 2 made stepping
+                                  // backwards from 2 bounce straight back, so Cancel was
+                                  // unreachable that way.
+                                  if (hwConf == 1)
+                                      hwConf = (t > 0) ? 2 : 0;
                       #endif
                                   break;
                       case posLoraPower:
@@ -1700,7 +1705,7 @@ boolean MorsePreferences::adjustKeyerPreference(prefPos pos) {        /// rotati
             displayValueLine(pos, itemLine, false, false);   /// now display the value (value only, no heading)
 	          MorseOutput::refreshDisplay(); // update the display
          }      // end if     (checkEncoder)
-        #ifdef CONFIG_MCP73871
+        #ifdef CONFIG_BATTERY_ICON
          MorseOutput::checkPowerpathState();
          MorseOutput::updateBatteryDisplay();
         #endif

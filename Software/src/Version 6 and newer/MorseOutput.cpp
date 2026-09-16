@@ -762,7 +762,7 @@ namespace {
     void paintStatusBackground() {
         display.setFont(DialogInput_plain_12);
         display.setColor(WHITE);
-#ifdef CONFIG_MCP73871
+#ifdef CONFIG_BATTERY_ICON
         if (MorseOutput::batteryIconVisible)
             display.fillRect(0, 0, display.getWidth() - 34, SCROLL_TOP);
         else
@@ -828,7 +828,7 @@ void MorseOutput::clearDisplay() {
     statusClearPending = true;
     statusLineCache    = "";
     statusLineCacheWidth = 0;
-#ifdef CONFIG_MCP73871
+#ifdef CONFIG_BATTERY_ICON
     batteryDisplayDirty = true;
     batteryIconVisible = false;
 #endif
@@ -1461,9 +1461,9 @@ void MorseOutput::displayBatteryStatus(int v) {
  
   printOnScroll(NoOfVisibleLines - 1, REGULAR, 0, s);
  
-#ifndef CONFIG_MCP73871
+#ifndef CONFIG_BATTERY_ICON
   
-  // Non-MCP builds: show voltage-based battery icon on line 2
+  // Boards without a status-line icon: show voltage-based battery icon on line 2
   #define BATT_X       75
   #define BATT_W       35
   #define BATT_H       (LINE_HEIGHT - 4)
@@ -1496,7 +1496,7 @@ void MorseOutput::displayBatteryStatus(int v) {
   display.display();
 }
    
-#ifdef CONFIG_MCP73871
+#ifdef CONFIG_BATTERY_ICON
  
  
 // ---- State variables ----
@@ -1510,9 +1510,17 @@ static uint8_t lastDrawnBars = 255;
  
 // ---- Read raw powerpath state from pins ----
 uint8_t MorseOutput::getPowerpathState() {
+#ifdef CONFIG_MCP73871
     return (digitalRead(CONFIG_MCP_STAT1_PIN) << 2)
          | (digitalRead(CONFIG_MCP_STAT2_PIN) << 1)
          |  digitalRead(CONFIG_MCP_PG_PIN);
+#else
+    // MAX17048: no charger status reaches the ESP32. The gauge's own charge-rate
+    // register is no substitute -- measured on the Reverse TFT Feather it reported
+    // roughly -30 %/h while the cell voltage was visibly rising on USB. So report
+    // "running on the cell" (bit 0 set), which makes the icon show plain voltage bars.
+    return 1;
+#endif
 }
  
 // ---- Map voltage to 0-4 bars ----
@@ -1678,7 +1686,7 @@ void MorseOutput::resetPowerpathDisplay() {
     lastDrawnBars = 255;
 }
   
-#endif  // CONFIG_MCP73871
+#endif  // CONFIG_BATTERY_ICON
  
 void MorseOutput::displayEmptyBattery(void (*f)()) {                                /// display a warning and go to (return to) deep sleep
   display.clear();
@@ -1771,7 +1779,7 @@ void MorseOutput::dispWifiLogo() {     // display a small logo in the top right 
 // and be painted over the moment the icon is redrawn -- which looked exactly
 // like the indicator failing to appear at all after leaving a mode.
 static int bleLogoX() {
-#ifdef CONFIG_MCP73871
+#ifdef CONFIG_BATTERY_ICON
   return display.getWidth() - 34 - ble_width - 4;      // 34 = that reserved width
 #else
   return display.getWidth() - logoWidth;               // classic: battery is in the scroll area

@@ -499,7 +499,7 @@ void MorseMenu::menu_() {
                     break;
        }
 
-#ifdef CONFIG_MCP73871
+#ifdef CONFIG_BATTERY_ICON
        MorseOutput::checkPowerpathState();
        MorseOutput::updateBatteryDisplay();
 #endif
@@ -623,7 +623,7 @@ boolean MorseMenu::menuExec() {       // return true if we should  leave menu af
   MorsePreferences::usePracticeChars = false;
   keyerState = IDLE_STATE;
 
-#ifdef CONFIG_MCP73871
+#ifdef CONFIG_BATTERY_ICON
     MorseOutput::clearBatteryIcon();
 #endif
 

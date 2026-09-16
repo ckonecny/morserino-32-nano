@@ -27,6 +27,9 @@
 
 
 #include "morsedefs.h"
+#ifdef CONFIG_BATTERY_MAX17048
+#include <Wire.h>             // I2C fuel gauge, see max17048Millivolts()
+#endif
 
 #include "wklfonts.h"         // monospaced fonts in size 12 (regular and bold) for smaller text and 15 for larger text (regular and bold), called :
                               // DialogInput_plain_12, DialogInput_bold_12 & DialogInput_plain_15, DialogInput_bold_15
@@ -225,7 +228,7 @@ GEN_TYPE generatorMode = RANDOMS;          // trainer: what symbol (groups) are 
 File file;
 
 /// variable for selecting a hardware configuration menu option
-#ifndef CONFIG_MCP73871
+#if !defined(CONFIG_MCP73871) && !defined(CONFIG_BATTERY_MAX17048)
 int8_t hwConf = 1;                            // 0 = cancel hw config, 1 = battery measurement calibration, 2 = flip screen, 3 = lora config
 #else
 int8_t hwConf = 2;                            // 0 = cancel hw config,
@@ -3329,8 +3332,43 @@ String cleanUpProSigns( const String &input ) {
 
 //// measure battery voltage in mV
 
+#ifdef CONFIG_BATTERY_MAX17048
+/// Cell voltage from a MAX17048 fuel gauge, for boards that have one instead of an ADC
+/// divider. The chip measures the cell itself, so no vAdjust calibration applies. Any
+/// failure returns 0, which every caller treats as "no measurement" -- a gauge that does
+/// not answer must never be able to trigger the empty-battery shutdown.
+static bool max17048Read(int reg, uint16_t &value) {
+  const int ADDR = 0x36;
+  static bool wireStarted = false;
+  if (!wireStarted) {
+    Wire.begin(SDA, SCL);                 // the board variant's I2C pins, where the gauge sits
+    wireStarted = true;
+  }
+  Wire.beginTransmission(ADDR);
+  Wire.write(reg);
+  if (Wire.endTransmission(false) != 0)
+    return false;
+  if (Wire.requestFrom(ADDR, 2) != 2)
+    return false;
+  value = (uint16_t)Wire.read() << 8;
+  value |= (uint16_t)Wire.read();
+  return true;
+}
+
+static int16_t max17048Millivolts() {
+  uint16_t raw;
+  if (!max17048Read(0x02, raw))           // VCELL
+    return 0;
+  return (int16_t)(raw * 5UL / 64);       // 78.125 uV per LSB
+}
+#endif
+
 int16_t batteryVoltage() {      /// measure battery voltage and return result in milliVolts
-#ifndef CONFIG_MCP73871
+#ifdef CONFIG_BATTERY_MAX17048
+  int16_t mv = max17048Millivolts();
+  voltage_raw = mv;
+  return mv;
+#elif !defined(CONFIG_MCP73871)
 #ifdef PIN_ADC_CTRL
   #define	ADC_Ctrl  PIN_ADC_CTRL
   pinMode(ADC_Ctrl,OUTPUT);

@@ -17,6 +17,13 @@
 
 #include "Arduino.h"
 
+// The status-line battery icon needs a battery chip rather than a bare ADC divider: the
+// Pocket's MCP73871 charger (read through its status pins) or a MAX17048 fuel gauge. It
+// replaces the icon the other boards draw next to the voltage on the splash screen.
+#if defined(CONFIG_MCP73871) || (defined(CONFIG_BATTERY_MAX17048) && defined(CONFIG_TFT))
+  #define CONFIG_BATTERY_ICON
+#endif
+
 #ifndef CONFIG_TFT
   #define NoOfLines 15
   #define NoOfVisibleLines 3
@@ -129,7 +136,7 @@ namespace MorseOutput
   void dispBleLogo();                  // a BLE Serial client holds a session
   void clearBleLogo();                 // ... and that session has ended
 #endif
-#ifdef CONFIG_MCP73871
+#ifdef CONFIG_BATTERY_ICON
   extern uint8_t  ppCurrentState;
   extern uint8_t  ppPreviousState;
   extern bool     batteryDisplayDirty;

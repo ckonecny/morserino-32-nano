@@ -478,8 +478,8 @@ uint8_t scrollTop;
 
 #ifdef CONFIG_BUTTON_ENCODER
 // Which level means "pressed" belongs to the pin, not to the direction the button is
-// assigned to: on this board D0 is the BOOT button (hardware pull-up, so active LOW)
-// while D1/D2 have pull-downs (active HIGH). Keeping the two independent is what lets
+// assigned to: on this board D0 is the BOOT button and switches to GND (active LOW),
+// while D1/D2 switch to 3.3 V (active HIGH). Keeping the two independent is what lets
 // the two directions be swapped in the build config alone.
 #ifdef PIN_ENC_LEFT_ACTIVE_HIGH
   #define ENC_LEFT_PRESSED   (digitalRead(encLeftPin))
@@ -661,15 +661,16 @@ pinMode(PIN_VEXT, OUTPUT);
   pinMode(PinCLK,INPUT_PULLUP);
   pinMode(PinDT,INPUT_PULLUP);
 #else
-  // Follow each pin's own polarity (see ENC_LEFT_PRESSED): an active-HIGH pin has a
-  // hardware pull-down and must not get an internal pull-up fighting it.
+  // Follow each pin's own polarity (see ENC_LEFT_PRESSED). An active-HIGH button switches
+  // to 3.3 V and has no pull resistor on the board, so it needs the internal pull-down --
+  // left floating, it reads stray noise as presses.
 #ifdef PIN_ENC_LEFT_ACTIVE_HIGH
-  pinMode(encLeftPin,  INPUT);
+  pinMode(encLeftPin,  INPUT_PULLDOWN);
 #else
   pinMode(encLeftPin,  INPUT_PULLUP);
 #endif
 #ifdef PIN_ENC_RIGHT_ACTIVE_HIGH
-  pinMode(encRightPin, INPUT);
+  pinMode(encRightPin, INPUT_PULLDOWN);
 #else
   pinMode(encRightPin, INPUT_PULLUP);
 #endif
@@ -693,17 +694,10 @@ pinMode(PIN_VEXT, OUTPUT);
   analogSetAttenuation(ADC_0db);
 
 
-#ifdef INTERNAL_PULLUP
-pinMode(modeButtonPin, INPUT_PULLUP);
-#else
-pinMode(modeButtonPin, INPUT);
-#endif
-#ifdef CONFIG_BUTTON_ENCODER
-  // Adafruit Reverse TFT Feather: D1 (modeButtonPin/GPIO1) has a hardware
-  // pulldown; the button drives HIGH when pressed (active-HIGH).
-  // ORIGINAL_M32 board-version detection does not run here, so set
-  // activeHigh explicitly for this build.
-  pinMode(modeButtonPin, INPUT);
+pinMode(modeButtonPin, MODE_BUTTON_PIN_MODE);
+#ifdef PIN_ROT_BTN_ACTIVE_HIGH
+  // ORIGINAL_M32 board-version detection, which sets this for board v4, does not
+  // run on these builds.
   Buttons::modeButton.activeHigh = HIGH;
 #endif
 
@@ -818,11 +812,7 @@ delay(VEXT_SETTLE_MS);   // let the panel supply rail settle before the ST7789 r
 /// set up for encoder button
 //  pinMode(modeButtonPin, INPUT);
   pinMode(volButtonPin, INPUT_PULLUP);               // external pullup for all GPIOS > 32 with ESP32-LORA
-#ifdef INTERNAL_PULLUP
-  pinMode(modeButtonPin, INPUT_PULLUP);
-#else
-  pinMode(modeButtonPin, INPUT);
-#endif
+  pinMode(modeButtonPin, MODE_BUTTON_PIN_MODE);
                                                      // wake up also works without external pullup! Interesting!
 
   // Setup button timers (all in milliseconds / ms)

@@ -1510,11 +1510,7 @@ boolean MorsePreferences::adjustKeyerPreference(prefPos pos) {        /// rotati
             goToMenu = false;
             return true;
         }
-#ifdef INTERNAL_PULLUP
-        pinMode(modeButtonPin, INPUT_PULLUP);
-#else
-        pinMode(modeButtonPin, INPUT);
-#endif
+        pinMode(modeButtonPin, MODE_BUTTON_PIN_MODE);
 
         Buttons::modeButton.Update();
         switch (Buttons::modeButton.clicks) {

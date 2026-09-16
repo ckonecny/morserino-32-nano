@@ -138,6 +138,18 @@ const int modeButtonPin = PIN_ROT_BTN;
 const int modeButtonPin = 37;
 #endif
 
+/// Input mode for the encoder switch. Set PIN_ROT_BTN_ACTIVE_HIGH for a switch that pulls
+/// the pin to 3.3 V with no pull-down resistor on the board: the internal pull-down is then
+/// the only thing holding the pin low, and without it the floating input reads noise --
+/// a hand near the paddle is enough -- as phantom clicks, or stays high after a release.
+#ifdef INTERNAL_PULLUP
+  #define MODE_BUTTON_PIN_MODE INPUT_PULLUP
+#elif defined(PIN_ROT_BTN_ACTIVE_HIGH)
+  #define MODE_BUTTON_PIN_MODE INPUT_PULLDOWN
+#else
+  #define MODE_BUTTON_PIN_MODE INPUT
+#endif
+
 /// 2nd switch button - toggles between Speed control and Volume control (RED / FN button)
 #ifdef PIN_VOL_BTN
 const int volButtonPin = PIN_VOL_BTN;

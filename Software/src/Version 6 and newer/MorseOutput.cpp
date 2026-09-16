@@ -52,7 +52,11 @@ LGFX display;
 // Pockets (root cause not yet pinned down); the DisplayWrapper library
 // path is the only one that keeps the panel alive.
 #include "DisplayWrapper.h"
+#ifdef SPLASH_LOGO_NANO
+#include "m32logo_nano_aa.h"     // same boot-splash logo, lettered "Nano" instead of "Pocket"
+#else
 #include "m32logo_aa.h"          // pre-rendered anti-aliased boot-splash logo (white-on-black)
+#endif
 #ifdef CONFIG_SCROLL_FONT_SIZE
 #include "IntelOneMono12ptAscii.h"   // ASCII-range small scroll font (see that file for why)
 #endif

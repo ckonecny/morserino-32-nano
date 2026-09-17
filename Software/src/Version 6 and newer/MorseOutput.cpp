@@ -1750,6 +1750,13 @@ void MorseOutput::displayEmptyBattery(void (*f)()) {                            
 #define leftBoundary 35
 #define logoWidth 7
 #endif
+// The status line's text fields end at column 13 ("WpM"/"Chr" start at column 10). A panel
+// narrower than the Pocket's 320 px has to shrink the right-hand block (meter plus logo slot)
+// to start after that, or the meter covers the text.
+#ifdef STATUS_METER_BLOCK_WIDTH
+#undef leftBoundary
+#define leftBoundary STATUS_METER_BLOCK_WIDTH
+#endif
 #define meterWidth (leftBoundary - logoWidth)
 
 /// display volume as a progress bar: vol = 1 - 20

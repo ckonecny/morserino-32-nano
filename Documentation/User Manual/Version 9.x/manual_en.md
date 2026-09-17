@@ -34,7 +34,7 @@ comments, suggestions, criticism, reviews, blog entries, Youtube videos
 and other means–to making the Morserino-32 a successful and
 outstanding product. Among the many contributors, one deserves special mention: Hari, OE6HKE — without him the M32 Pocket wouldn't exist!
 
-<!-- WHATSNEW:BEGIN en=2b77de7a5ea7 v=9 -->
+<!-- WHATSNEW:BEGIN en=d24b18851fa5 v=9 -->
 What is new in Version 9?
 
 -   A single firmware installer for every Morserino, at [https://www.morserino.info/install.html](https://www.morserino.info/install.html). It asks the processor in your device which Morserino it is, so you no longer have to know whether to start on the page for the classic M32 or the one for the M32 Pocket - there is only one page now. It also tells you which firmware version is currently on the device before you install anything, and lets you choose whether your settings are kept or erased. The two previous installer pages forward to it, so existing bookmarks keep working.
@@ -48,9 +48,11 @@ What is new in Version 9?
 -   M32Pocket only: after a firmware install with the erase option (or a firmware install to a completely new device), it took up to 10 seconds until something was visible on the screen, while the non-volatile file system was being prepared. To avoid panic, a modified splash with some informative message is being displayed now in such cases.
 -   M32Pocket only: a new preference **Font Size** lets you switch the scrolling display area between the normal text size and a smaller one, which fits more characters per line and shows five lines instead of four. Handy at higher speeds or with longer words, when you want to see more of what has just been sent.
 -   The serial protocol used by the Configuration Tool and other utilities has been extended to **version 1.4**. A connected program can now read the full details of all preferences in a handful of requests instead of one request per preference, ask the device which of the optional commands it actually supports (instead of trying them out to find out), and read or clear the stored game scores. Everything from version 1.3 keeps working unchanged, so programs written for it need no adaptation. The protocol is described in the separate *M32 Protocol* document.
+-   The Configuration Tool's Preferences tab now shows the **default value** of every setting, next to the setting itself, and marks the ones you have changed away from it — one click on the marked value puts that single setting back to its default, without touching anything else. Useful after a spell of experimenting, when you want to know what a setting started out as but do not want to reset the whole device. The Morserino reports its defaults over the serial protocol from this version on; connected to older firmware the Tool simply leaves the column out.
 -   M32 Pocket only: the Configuration Tool now shows the **game scores** stored on your device - the high score tables of all games, and whether Radio Cave has a saved game - on the User Identity tab, next to the call sign and name they were played under. A button there clears them all, doing the same as „Reset Scores“ in the preferences menu on the device.
 -   The Koch Trainer has a new entry, **Preview Char**, next to **Learn New Chr**. It opens a list of every character of your Koch course — in the order you learn them — and then plays the one you pick, over and over, exactly the way Learn New Chr does. Useful for going back to a character that never quite stuck, or for hearing what is still ahead of you. While it is playing, the FN button has a third position beyond speed and volume: with the ENCODER set to „character“ you can step through the whole course by ear, without going back to the list, and the top line shows which lesson and character you are on. Thanks to Christian, OE1CKO.
 -   A new preference **Boost Practice** makes the characters of your **Practice Set** turn up more often — Moderate or Strong — instead of your only being able to drill them on their own. It applies to the Random Characters exercises of CW Generator and Echo Trainer, and to the Koch Trainer's own character generation. It never introduces a character the exercise would not have produced anyway: it only shifts the odds within whatever you already have selected, so a Practice Set digit has no effect while you are practising letters only. Off by default. The **Practice Set** picker itself now sits directly next to it in the preferences of the CW Generator, the Echo Trainer and the Koch Trainer, so you can choose the characters and decide how hard to push them in one place, instead of having to go to the top-level **Set Preferences** for the one and back for the other. Thanks to Christian, OE1CKO.
+-   A new preference **Echo Think T.** gives you thinking time in the Echo Trainer: after the prompt, the Morserino waits a further 0 to 20 seconds before it starts expecting your answer. This is meant for head copy — hearing a whole call sign or word and putting it together in your head before you touch the paddle. Until now the only way to buy that time was to slow the prompt down or to widen the character and word spacing, and both of those change the exercise itself, on the whole device rather than only in the Echo Trainer. The number you set is the number of seconds waited; 0, the default, leaves the Echo Trainer exactly as it was. Nothing else changes: as soon as you start keying, your answer is judged the moment you finish it, as before. The idea and the original implementation are Ian Gilchrist's, VK1HF, who built it for his own head-copy practice; thanks to him, and to Christian, OE1CKO, who reworked it.
 -   The installer now works in **Firefox** as well (from version 151, which added support for the Webserial API), alongside Chrome, Edge and Opera. Safari still does not support it.
 -   Custom Characters is now working like any other built-in Koch order, you can use select lesson, learn new character and the other Koch modes in the same way as with the built-in Koch sequences.
 -   There is a new feature called „Practice Sets“ that takes the place of the previous Custom character sets, which allows you to train a subset of individual characters which you pick directly on the device and then you can use them for CW generator or Echo Trainer.
@@ -59,10 +61,11 @@ What is new in Version 9?
 -   A few more cosmetic display output fixes.
 -   The Configuration Tool's Preferences tab now loads in a fraction of the time it used to, because it reads the preferences in a few requests instead of one per preference. The difference is most noticeable over Bluetooth.
 -   M32 Pocket only: all sound is cleaner. The audio chip's internal gain was set so high that every tone was being clipped inside the chip, before it ever reached the volume control - audible as a harsh, buzzy tone that no Tone Volume setting could cure. The CW sidetone, the spoken menus of the Accessibility Edition and your own uploaded success/error sounds are now all reproduced undistorted. Two things follow from this that you will notice: the sidetone is a clean sine now instead of the harmonically rich sound it was, which on the small built-in loudspeaker can seem slightly less penetrating even though it is not quieter; and sounds you uploaded yourself will be quieter than before, because they are no longer being distorted (see the note in the Echo Trainer section of the manual). Loudspeaker and headphone levels have been rebalanced against each other. Thanks to Christian, OE1CKO, for finding this.
--   M32 Pocket only: the two signals that tell you in the Echo Trainer whether your answer was right or wrong have been reworked. They now sit a fifth higher and carry harmonics, which the small built-in loudspeaker reproduces far better than the plain low tones they used to be - after the clipping fix above, those tones had lost the distortion they had unintentionally been relying on and had become much too quiet. The error signal now also falls in pitch, the way it always has on the classic Morserino, instead of rising like the acknowledgement; a rising "error" had crept into the M32 Pocket version by mistake.
+-   M32 Pocket only: the two signals that tell you whether your answer was right or wrong - in the Echo Trainer, and in the games - have been reworked. After the clipping fix above they had become much too quiet on the small built-in loudspeaker, having unintentionally been relying on the distortion for their carrying power. They are now built from a full set of harmonics rather than a plain tone, which that loudspeaker reproduces far better: the acknowledgement is bright and trumpet-like, the error signal darker, more like a bassoon. Both are clearly audible again while sitting a little below the volume of the Morse code itself, whatever Tone Volume you have set - they are meant to inform you, not to startle you. The error signal also falls in pitch, the way it always has on the classic Morserino, instead of rising like the acknowledgement; a rising "error" had crept into the M32 Pocket version by mistake. If you would rather have something else entirely, both signals can still be replaced by MP3 files of your own (see the note in the Echo Trainer section of the manual).
 -   M32 Pocket only: the volume steps for the built-in loudspeaker have been redistributed. A small loudspeaker needs considerably more drive than headphones before it produces anything audible, so with the now undistorted tone the lowest few settings had become inaudible and that part of the range was simply wasted. The steps are now smaller and span a narrower range, so every setting from 1 upwards does something. The maximum is unchanged - but because the steps in between are smaller, your usual setting will now be at a different number than before. Headphones are unaffected and keep their almost-silent lowest setting; they are, however, about 3 dB quieter at maximum, which was too loud.
 -   A Bluetooth (BLE Serial) connection now has to be allowed on the Morserino itself. When an app asks for a session, the device shows „Allow connect?“ and waits for you to press FN - a USB cable has to be plugged in by someone standing next to your device, while anything within radio range can connect over Bluetooth, so the Morserino asks before it hands over control. You are only asked in the main menu (in a training mode the request is refused without interrupting you), an app that reconnects within a minute is let straight back in, and while a session is open a small Bluetooth symbol in the top line shows that something is connected.
 -   The **Practice Set** picker is now reachable from the preferences of the CW Generator, the Echo Trainer and the Koch Trainer, and not only from the top-level **Set Preferences** — it sits next to the new **Boost Practice** setting that acts on it.
+-   The **VK/ZL** setting of **Calls Region** now generates call signs that look like the ones you actually hear on the air down there. It used to pick the call area at random, which made VK8 (the Northern Territory, about a quarter of a million people) as likely as VK2 (New South Wales, over eight million); the areas are now weighted by population, and roughly one call in six is a ZL rather than a VK. Suffixes are two or three letters, as they are in practice. **Calls Region** was also missing from the manual entirely — it has been there since V8.1 — and is now described in both languages. Thanks to Ian Gilchrist, VK1HF, whose setting this is and who worked out the weighting.
 <!-- WHATSNEW:END -->
 
 # Connectors and Controls
@@ -280,7 +283,8 @@ together, and your settings and snapshots survive it.
 • ON/OFF (Battery): Sliding switch located on the back near the
 loudspeaker. Connects/disconnects battery.
 
-• ENCODER: The black knob that you can rotate and press.
+• ENCODER: The knob that you can rotate and press[ (the black one on the
+first and second edition Morserinos)]{.classic}.
 
 • FN: The other push-button switch [(the red one on the first and second
 edition Morserinos).]{.classic}[(integrated into the case on the
@@ -704,8 +708,15 @@ down, briefly releasing one of them and closing it again — just a flick —
 hands control back to that paddle, which then keeps sending its own
 element type until you release it again or flick the other one. This
 works for either paddle, including the one that started the character.
-This mode also responds to entries activated on the opposite paddle with
-the same timing preferences defined for Iambic B mode.
+
+Every closure of a paddle is remembered, and is guaranteed to produce at
+least one element of its type — however briefly you touch it, and wherever
+in the current element it falls. Ultimatic therefore has no use for the
+timing preferences of the Iambic modes: **CurtisB DahT%**, **CurtisB
+DitT%** and **Latency** all have no effect in Ultimatic mode. Contact
+bounce is taken care of instead by a short fixed guard, so a chattering
+contact — or a touch pad that loses contact for an instant — does not add
+an element you did not ask for.
 
 **Non-Squeeze Mode:** This simulates the behavior of a single-lever
 paddle when using a dual-lever paddle. Operators who are accustomed to
@@ -1079,7 +1090,19 @@ own sounds are reproduced cleanly – but they will also be quieter than they we
 on earlier firmware, where they were being distorted. If that bothers you,
 prepare them a little louder. Keep their peak level at or just below –1 dBFS: a
 file normalised to the full 0 dBFS will still distort, because the MP3 decoder
-runs out of headroom before the sound chip does.
+runs out of headroom before the sound chip does. Note that this is a ceiling and
+not a target: a file mastered right up against it comes out louder than the
+Morse code you are practising, which gets tiring in a long session.
+
+A ready-made set of six pairs – a fanfare, handbells, a marimba, a soft chime,
+a minimal "soft & simple" pair and an arcade-style pair – comes with the
+Configuration Tool, already at a suitable level. You do not have to download anything: under **Files**, the
+**Sound Packs** section plays each sound in your browser so you can hear it
+before deciding, installs the pair you pick with a single click, and can remove
+both files again to bring the built-in signals back. The same packs are also in
+the repository, at
+[Sound Packs](https://github.com/oe1wkl/Morserino-32/tree/master/Documentation/Sound%20Packs),
+if you want them as a starting point for making your own.
 :::
 
 In this mode, the prompt word will not normally be displayed; only your
@@ -1148,6 +1171,14 @@ value with the Encoder, or if it is getting faster as a result of
 adaptive speed, the speed for keying your input stays at that maximum
 (so you can train your copying at faster speeds than you are comfortable
 to use when keying).
+
+**Echo Think T.**: Adds a fixed pause of 0–20 seconds after the prompt,
+before the Echo Trainer expects your response. This is particularly
+useful for head-copy practice with call signs, where you need time to
+mentally reconstruct what you heard before keying it back, without
+having to reduce the prompt speed or change the dot/dash ratio or word
+spacing — which would affect the whole device, not just the Echo
+Trainer.
 
 **Intercharacter Space** and **Interword Space**: The first preference
 defines the pause between characters in the prompt the M32 is generating
@@ -3036,10 +3067,10 @@ to **Straight Key** in order to use a straight key).
 | Paddle Polarity | Defines which paddle side is for dits, and which for dahs | -. dah-dit / **.- di-dah** |
 | External Pol. | Allows to reverse the polarity of an external paddle. Use this if your external paddle is wired "the wrong way", so that dots and dashes of internal and external paddle are all on the same side.                                                                          | **Normal** / Reversed |
 | Keyer Mode | Sets the Iambic Mode (A or B), Ultimatic, Non-Squeeze or Straight Key; see the section **CW Keyer**      |                                                                                                                                   Curtis A / **Curtis B** /  Ultimatic / Non-Squeeze / Straight Key |
-| CurtisB DahT% | Timing in Curtis B mode for dahs; see the section **CW Keyer**. Also influences the behavior in Ultimatic mode!                                                                                                                                 0 – 100, in steps of 5 | [**35 – 55**\] |
-| CurtisB DitT% | Timing in Curtis B mode for dits; see the section **CW Keyer** Also influences the behavior in Ultimatic mode!                                                                                                                              0 – 100, in steps of 5 | [**55 – 95**\] |
+| CurtisB DahT% | Timing in Curtis B mode for dahs; see the section **CW Keyer**. Applies to Iambic B only — Ultimatic ignores it.                                                                                                                                 0 – 100, in steps of 5 | [**35 – 55**\] |
+| CurtisB DitT% | Timing in Curtis B mode for dits; see the section **CW Keyer**. Applies to Iambic B only — Ultimatic ignores it.                                                                                                                              0 – 100, in steps of 5 | [**55 – 95**\] |
 | AutoChar Spce | Minimum spacing between characters | Off / min. 2 / **3** / 4 dots |
-| Latency | Defines how long after generating the current element (dot or dash) the paddles will be „deaf". If it is 0%, you have to release the paddle while the last element is still „on". If set to 87.5%, the paddles will only react to a paddle press after 7/8 of a dot length. | A value between 0% and 87.5%, meaning 0/8 to 7/8 of a dot length (default is **50%**, i.e. half a dot length). |
+| Latency | Defines how long after generating the current element (dot or dash) the paddles will be „deaf". If it is 0%, you have to release the paddle while the last element is still „on". If set to 87.5%, the paddles will only react to a paddle press after 7/8 of a dot length. Has no effect in Ultimatic mode, which handles the paddles its own way. | A value between 0% and 87.5%, meaning 0/8 to 7/8 of a dot length (default is **50%**, i.e. half a dot length). |
 | Bluetooth Use | Defines what the Bluetooth radio is used for. The first four options (besides **No Bluetooth**) are keyboard modes: The VBand option allows the Morserino to be used as a VBand dongle (for VBand see *https://hamradio.solutions/vband/*), **Decoded output** sends all decoded characters not only to the display, but also out via Bluetooth, and the **Generic Kbd** option does more or less the same as **Decoded output**, but it sends the code for the "**Enter**" Key (New Line) when you key \<KA> (new message), and for the "**Backspace**" key when you key \<HH> (i.e. 8 dits). The M32 will appear as a US keyboard (QWERTY layout). *Bluetooth keyboard output is only active in CW Keyer mode (see also **Using the Bluetooth Keyboard functionality**).* The last option, **BLE Serial**, instead makes the M32 Serial Protocol (see **Using the Serial Output of the M32**) available over Bluetooth Low Energy, so apps on phones and tablets can remote-control the Morserino and send text to be keyed as CW — without a USB cable; it takes effect on the next return to the main menu. Note that, like a USB protocol session, an active BLE protocol session prevents the automatic power-off timeout — keep this in mind when running on battery. | **No Bluetooth** / VBand Kbd / Decoded output / VBand+Decoded / Generic Kbd / BLE Serial |
 | BLT \<AR> | Only relevant in **Generic Kbd** mode (see **Bluetooth Use** above). Determines how the \<AR> prosign is sent over Bluetooth: as the literal character "**+**" or as a soft line break (Shift+Enter). | **+** / Linefeed |
 
@@ -3091,7 +3122,7 @@ Echo Trainer!
 | Length Rnd Gr | Here you select how many characters there should be in each group of random characters; traditionally this is 5, but for training it might make sense to start with a smaller number. | Fixed lengths 1 – 6, and 2 to 3 – 2 to 6 (length chosen randomly within these limits) \[**5**\] |
 | Boost Practice | Raises the odds that characters from your **Practice Set** (see **Preferences regarding Practice Set** above) come up: in Random Characters groups, on top of the **Random Groups** subset selected above; and in the Koch Trainer’s character generation (fixed or Adaptive), on top of whichever characters the current Koch Lesson has unlocked. It never overrides Koch’s own weighting of newer/adaptive characters – it only asks Koch’s scheme again when the draw misses a Practice Set character, so the "learn new characters more" behaviour is preserved exactly. Only affects character generation – Words, Abbreviations and Call Signs are unaffected. Has no effect while Practice Set is empty; a Practice Set character outside the currently active character pool (the **Random Groups** subset, or the current Koch Lesson) is never boosted in on its own. | **Off** / Moderate / Strong |
 | Length Calls | Select the maximum length of generated call signs | **Unlimited** / max. 3 – max. 6 |
-| Calls Region | Select if you want to see call signs from around the world, or just from a certain continent. **This parameter is ignored when the call length has been set to a maximum of 3 characters.** | **All** / Europe / N America / S America / Africa / Asia / Oceania |
+| Calls Region | Select if you want to see call signs from around the world, or just from a certain continent. **VK/ZL** narrows it further still, to Australian and New Zealand call signs only: the call areas are weighted by population, so VK2 and VK3 come up far more often than VK8 or VK0, and roughly one call in six is a ZL. **This parameter is ignored when the call length has been set to a maximum of 3 characters** — there is no 3-character VK or ZL call either. | **All** / Europe / N America / S America / Africa / Asia / Oceania / VK/ZL |
 | Call Prefixes | You can use this setting to filter out very rare prefixes, and get only call signs with more common prefixes. | **Common only** / All |
 | Length Abbrev | Select the maximum length of the randomly generated common CW abbreviations and Q groups | **Unlimited** / max. 2 – max. 6 |
 | Length Words | Select the maximum length of the randomly generated common English words | **Unlimited** / max. 2 – max. 6 |
@@ -3121,6 +3152,7 @@ time" after the prompt before you must begin keying your response!
 | Tone Shift | The pitch of the tone, when you are using the Echo Trainer mode or transmitting in a transceiver mode, can either be the same as the one you get from the receiver (or from the prompt in Echo Trainer mode), or can be a half tone lower or a half tone higher. | **No Tone Shift** / Up 1/2 Tone / Down 1/2 Tone |
 | Adaptv. Speed | If this is set to ON, the speed will be increased by 1 WpM whenever you gave a correct response in Echo Trainer mode, and will be decreased by 1 whenever you made a mistake. | ON / **OFF** |
 | Echo Speed Max | Set this to the maximum speed you would like to use for keying in Echo Trainer mode. If you set the speed faster than this value with the Encoder, or if it is getting faster as a result of adaptive speed, the speed for keying your input stays at that maximum. | **No limit** / 5 – 50 wpm (in steps of 5 wpm) |
+| Echo Think T. | Adds a fixed pause after the prompt before the Echo Trainer expects your response, useful for head-copy practice. | **0 s** – 20 s (in steps of 1 s) |
 
 
 
@@ -3644,6 +3676,53 @@ File Player's text for its voice clips.
 Older bookmarks pointing at the previous two separate installer pages
 still work; they now forward to this one page.
 
+### If the Morserino Does Not Respond: Recovery Boot Mode
+
+If an update has gone wrong, the Morserino may seem dead: the screen
+stays dark or frozen, it ignores all controls, and the installer cannot
+find it on USB. It is almost certainly not broken. Every Morserino can
+be forced into the processor's built-in update mode (the same ROM update
+mode the installer uses), which does not depend on the firmware at all:
+
+1. **Switch the power off completely.** Unplug the USB cable. If your
+   Morserino has a battery, also set the power switch to off.
+2. With the device off, **press and hold the FN button**.
+3. Keep holding it and **plug the USB cable back in**. If you have a
+   battery, leave the power switch off - USB supplies the power for the
+   recovery.
+4. Once the device has power, **release the FN button**. The Morserino is
+   now in recovery boot mode and the installer can reach it again.
+
+::: {.pocket .pocket-a11y}
+On the M32 Pocket, the FN button is the cut-out in the case, to the lower
+right of the ENCODER knob.
+:::
+
+::: {.classic}
+On the Morserino-32 1st and 2nd edition, the FN button is the red
+button.
+:::
+
+::: note
+**The screen stays dark the whole time** the device is in recovery boot
+mode. That is expected: the firmware is not running.
+:::
+
+Now run the installer as described above and choose *Erase everything*,
+which also removes any corrupted settings that might stop the new
+firmware from starting. Your preferences, snapshots and high scores are
+lost in the process.
+
+::: {.classic}
+On the 1st and 2nd edition, USB is handled by a separate chip (the
+CP210x), so the device normally appears on USB even when the firmware
+is broken. If it does not show up at all, suspect the cable or the
+CP210x driver first. The recovery boot mode is still the right thing to
+try if the installer finds the port but cannot connect.
+:::
+
+Thanks to Brian, N6UGP, for describing this procedure.
+
 ## Using a Browser to set up M32 Preferences, and upload Text Files
 
 There are currently three sites that enable you to set up M32 preferences
@@ -3777,10 +3856,10 @@ command, the Morserino shows
     FN = yes
     click = no
 
-Press **FN** (the red button) to allow the connection. A click on the
-black knob refuses it, and so does simply doing nothing for about 20
-seconds — the connection is never granted by accident. The app will tell
-you that it is waiting for this.
+Press **FN** to allow the connection. A click on the encoder knob refuses
+it, and so does simply doing nothing for about 20 seconds — the
+connection is never granted by accident. The app will tell you that it is
+waiting for this.
 
 Three things are worth knowing:
 

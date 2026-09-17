@@ -20,11 +20,13 @@ The web tool is **not forked**. `sync-webtool.sh` copies it out of
 `Software/Utilities/` at build time, so the browser version and the app version
 can never drift apart.
 
-> **Status: working, bench-tested, not yet submitted.** It builds, signs and
-> runs on an iPhone against real hardware. Exercised on the bench: connecting
-> and the on-device consent prompt, reading and changing preferences, the File
-> Builder end to end, and the power/battery reporting. The App Store groundwork
-> below is done; the submission itself has not been made.
+> **Status: with App Review** — version 1.0, build 1, submitted 2026-09-12. On
+> 2026-09-13 App Review asked for more information under guideline 2.1, the
+> letter a new developer account with limited review history gets; the answer
+> went back the same day and is kept in `store-listing.md`. Bench-tested
+> throughout on real hardware: connecting and the on-device consent prompt,
+> reading and changing preferences, the File Builder end to end, and the
+> power/battery reporting.
 >
 > Untested: pushing a large file (an MP3) to the device over BLE.
 
@@ -51,6 +53,11 @@ cd "Software/iOS/M32Config" && cp -n Local.xcconfig.example Local.xcconfig; ./sy
 The `cp -n` is there because `xcodegen generate` refuses to run without
 `Local.xcconfig`; it never overwrites an existing one, so it is safe to leave in
 the command you run every time.
+
+**You do not need to re-run `sync-webtool.sh` after editing the config tool.**
+Every build runs it first, as a pre-build phase, so a change in
+`Software/Utilities/` is in the app the next time you press ▶. It is still there
+to run by hand if you want to sync without building.
 
 Then in Xcode:
 
@@ -139,23 +146,45 @@ Already in place, and verified in the built bundle:
   `Resources/AppIcon.svg` is what it was rendered from and carries the
   regeneration recipe, including the alpha-stripping step the build needs.
 
-Still to do, roughly in order:
+All of it is done for 1.0 and the app is with the reviewers. What follows is
+kept as the recipe for the next version, and for the traps that cost time:
 
 1. **Enrol in the Apple Developer Program** ($99/year). Needed for TestFlight as
    well as the store, so it is unavoidable either way. Decide individual vs
    organization first — an individual listing carries your personal legal name,
    and switching later is a support ticket, not a checkbox.
+0. **Bump the build number.** `CURRENT_PROJECT_VERSION` 1 was used by the 1.0
+   submission; App Store Connect refuses a second upload that reuses it.
 2. **Screenshots, from real hardware.** The simulator has no Bluetooth, so it
-   can never show a connected state. Apple's slot is the 6.9-inch display,
-   1320×2868; a 14 Pro shoots 1179×2556 and is refused at upload, so run them
-   through `./store-screenshots.sh <folder>` first. Take them all from ONE
+   can never show a connected state. A 14 Pro shoots 1179×2556, which no slot
+   accepts, so run them through `./store-screenshots.sh <folder>` first — it
+   writes a `6.9-inch/` and a `6.5-inch/` folder. **Upload to the 6.9-inch
+   tab**; the size selector sits above the upload area, and on the wrong tab
+   App Store Connect declares your correct files "required: 1242 × 2688 …",
+   which reads like a file problem and is not. Take them all from ONE
    build — a shot from an older build showing "USB · Chrome/Edge" in the
    connection bar is exactly the confusion the bridge now fixes.
 3. **A privacy policy URL.** Mandatory for every app, even one that collects
    nothing. A short page on morserino.info is enough.
-4. **Reviewer notes and a demo video.** The reviewer has no Morserino, so
-   guideline 2.1 ("we could not test your app") is the likely first rejection.
-   Say plainly that it configures a physical CW device, and link a video.
+4. **Reviewer notes and a demo video.** The reviewer has no Morserino, so say
+   plainly that the app configures a physical device. Then expect a new
+   developer account's first submission to come back under **guideline 2.1 –
+   Information Needed** whatever you write: it is triggered by the account's
+   limited review history, not by a fault in the app, and 1.0 got exactly that.
+   It asks six numbered questions; the answers are in `store-listing.md`.
+   - **Answer twice** — as a reply in the Resolution Center, and in App Review
+     Information → Notes. The letter asks for a reply, not a new build; leave
+     Xcode alone.
+   - **The Notes field holds 4,000 bytes** — Apple's unit for this field is
+     bytes, not characters, so every em-dash costs three. The 1.0 answers fit
+     with about a hundred to spare. Measure after any edit, in bytes.
+   - **A screen recording made on the phone** — Control Center, microphone on —
+     starting at the home screen and launching the app. A camera video is not a
+     screen recording, but attach one too: it is the only thing that shows the
+     hardware.
+   - **Attach the videos to the reply**, re-encoded first. The 69-second camera
+     video went from 103 MB to 8 MB with
+     `ffmpeg -i in.mp4 -c:v libx264 -crf 25 -preset slow -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart out.mp4`.
 5. **Be ready for guideline 4.2** (repackaged website). This app is defensible:
    it loads **no remote content** — the tool is bundled — and its core function
    is native CoreBluetooth doing something no website can do on iOS. Put that in
@@ -169,9 +198,10 @@ Still to do, roughly in order:
 | `Sources/M32Client.swift` | Native request/response + JSON assembly. Not used by the web tool. |
 | `Sources/WebToolView.swift` | `WKWebView` host and the JS ⇄ CoreBluetooth bridge. |
 | `Sources/BundleSchemeHandler.swift` | Serves the bundled tool under `m32app://local/`. |
-| `Sources/ContentView.swift` | Two tabs: the tool, and the link test. |
-| `Resources/Web/bridge.js` | The ninety lines that re-point the tool at Bluetooth. |
-| `sync-webtool.sh` | Copies the tool out of `Software/Utilities/`. |
+| `Sources/ContentView.swift` | Three tabs: the tool, the link test, and Help. |
+| `Sources/HelpView.swift` | The Help tab. Native, so it reads before any connection exists. |
+| `Resources/Web/bridge.js` | Re-points the tool at Bluetooth: transport, timeouts, saving, cosmetics. |
+| `sync-webtool.sh` | Copies the tool out of `Software/Utilities/`. Runs automatically before every build. |
 | `Local.xcconfig.example` | Template for your signing Team ID; copy to the git-ignored `Local.xcconfig`. |
 | `Resources/Assets.xcassets` | App icon. Regenerate from `Resources/AppIcon.svg`. |
 

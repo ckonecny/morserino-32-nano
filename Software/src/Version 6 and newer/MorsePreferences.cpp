@@ -86,7 +86,7 @@ const char * prefName[] = {
                       "echoToneShift", "interWordSpace", "farnsworthMode", "randomOption",
                       "randomLength", "randomBoost", "callLength", "callContinent", "callCommon","abbrevLength", "wordLength",
                       "GeneratorDispl", "wordDoubler", "echoDisplay", "echoRepeats", "echoConf",
-                      "KeyExternalTx", "LoraCwTransmit", "goertzelBW", "speedAdapt", "echoSpeedMax",
+                      "KeyExternalTx", "LoraCwTransmit", "goertzelBW", "speedAdapt", "echoSpeedMax", "echoThinkTime",
                       "KochSeq", "carouselStart", "latency", "randomFile", "extAudioOnDecod", "timeOut",
                       "quickStart", "outputCase", "autoStop", "maxSequence", "LoraChannel",
 #ifdef CONFIG_BLUETOOTH_KEYBOARD
@@ -369,6 +369,14 @@ parameter MorsePreferences::pliste[] = {
     "Maximum response speed in echo trainer (0=no limit)",
     true,
     {"No limit", "5 wpm", "10 wpm", "15 wpm", "20 wpm", "25 wpm", "30 wpm", "35 wpm", "40 wpm", "45 wpm", "50 wpm"}
+  },
+  {
+    0, 0, 20, 1,                                                // Echo trainer: thinking time in seconds before a response is expected (0 = no extra wait); unmapped so value == seconds (see PR #207)
+    "Echo Think T.",
+    "Seconds to wait before echo trainer expects your response",
+    false,
+    {},
+    "Echo think time in seconds"
   },
   {
     0, 0, 4, 1,                                                 // select Koch sequence: 0 = native/JLMC, 1 = LCWO, 2 = CW Academy, 3 = LICW, 4 = Custom
@@ -714,7 +722,7 @@ FilePart MorsePreferences::fileParts[MAX_FILE_PARTS];
  prefPos MorsePreferences::echoPlayerOptions[] = { PREFPOS_COMMON_CORE LINEOUT THEME SCROLLFONT BLUE posSerialOut, posPolarity, posExtPddlPolarity,
 
                                                    posCurtisMode, posCurtisBDahTiming, posCurtisBDotTiming, posACS,  posLatency, posInterCharSpace, posInterWordSpace,
-                                                   posMaxSequence, posRandomFile, posEchoRepeats, posEchoDisplay, posEchoConf, posEchoToneShift, posSpeedAdapt, posEchoSpeedMax,
+                                                   posMaxSequence, posRandomFile, posEchoRepeats, posEchoDisplay, posEchoConf, posEchoToneShift, posSpeedAdapt, posEchoSpeedMax, posEchoThinkTime,
                                                  };
 
  prefPos MorsePreferences::echoTrainerOptions[]= { PREFPOS_COMMON_CORE LINEOUT THEME SCROLLFONT BLUE posSerialOut, posPolarity, posExtPddlPolarity,
@@ -722,7 +730,7 @@ FilePart MorsePreferences::fileParts[MAX_FILE_PARTS];
                                                    posCurtisMode, posCurtisBDahTiming, posCurtisBDotTiming, posACS,  posLatency,
                                                    posInterCharSpace, posInterWordSpace,
                                                    posRandomOption, posRandomLength, posPracticeChars, posRandomBoost, posCallLength, posCallContinent, posCallCommon, posAbbrevLength,  posWordLength,
-                                                   posMaxSequence, posEchoRepeats, posEchoDisplay, posEchoConf, posEchoToneShift, posSpeedAdapt, posEchoSpeedMax,
+                                                   posMaxSequence, posEchoRepeats, posEchoDisplay, posEchoConf, posEchoToneShift, posSpeedAdapt, posEchoSpeedMax, posEchoThinkTime,
                                                  };
 
  prefPos MorsePreferences::kochGenOptions[] =    { PREFPOS_COMMON_CORE LINEOUT THEME SCROLLFONT BLUE posSerialOut, posPolarity, posExtPddlPolarity,
@@ -737,7 +745,7 @@ FilePart MorsePreferences::fileParts[MAX_FILE_PARTS];
 
                                                    posCurtisMode, posCurtisBDahTiming, posCurtisBDotTiming, posACS,  posLatency, posKochSeq, posCarouselStart,
                                                    posInterCharSpace, posInterWordSpace, posRandomLength, posPracticeChars, posRandomBoost, posAbbrevLength,  posWordLength,
-                                                   posMaxSequence, posEchoRepeats, posEchoDisplay, posEchoConf, posEchoToneShift, posSpeedAdapt, posEchoSpeedMax,
+                                                   posMaxSequence, posEchoRepeats, posEchoDisplay, posEchoConf, posEchoToneShift, posSpeedAdapt, posEchoSpeedMax, posEchoThinkTime,
                                                  };
 
  prefPos MorsePreferences::loraTrxOptions[] =    { PREFPOS_COMMON_CORE  LINEOUT THEME SCROLLFONT BLUE posSerialOut, posPolarity, posExtPddlPolarity,
@@ -785,7 +793,7 @@ FilePart MorsePreferences::fileParts[MAX_FILE_PARTS];
                                                    posKochSeq, posCarouselStart,
                                                    posInterCharSpace, posInterWordSpace, posRandomOption, posRandomLength, posPracticeChars, posRandomBoost, posCallLength, posCallContinent, posCallCommon, posAbbrevLength,  posWordLength,
                                                    posMaxSequence, posAutoStop, posGeneratorDisplay, posRandomFile, posWordDoubler,
-                                                   posEchoRepeats, posEchoDisplay, posEchoConf, posEchoToneShift, posSpeedAdapt, posEchoSpeedMax,
+                                                   posEchoRepeats, posEchoDisplay, posEchoConf, posEchoToneShift, posSpeedAdapt, posEchoSpeedMax, posEchoThinkTime,
                                                    posKeyExternalTx, posLoraCwTransmit,
                                                    posLoraChannel,
                                                    posGoertzelBandwidth, posExtAudioOnDecode,
@@ -819,6 +827,16 @@ int currentOptionSize;
 
 extern double voltage_raw;
 extern int16_t volt;
+
+// Repaint the preferences screen in place after the theme (or Font Size) changed underneath it -
+// from the config tool, or by the live preview while Theme itself is being adjusted: the same
+// layout, with the ">" marker while a value is being adjusted. Drawn only, not announced: the
+// entry on screen did not change, so there is nothing new to say or to send.
+static void repaintPreferencesScreen(prefPos pos, boolean adjusting) {
+    MorseOutput::clearDisplay();
+    MorsePreferences::displayKeyerPreferencesMenu(pos, false);
+    MorseOutput::printOnScroll(2, adjusting ? INVERSE_BOLD : REGULAR, 0, adjusting ? ">" : " ");
+}
 
 ////// setup preferences ///////
 
@@ -942,6 +960,8 @@ boolean MorsePreferences::setupPreferences(uint8_t atMenu) {
 
             MorseOutput::refreshDisplay();
           }    // end if (encoderPos)
+          if (MorseOutput::takeRepaintRequest())       // theme changed underneath us, e.g. from the config tool
+              repaintPreferencesScreen(posPtr, false);
 #ifdef CONFIG_BATTERY_ICON
           MorseOutput::checkPowerpathState();
           MorseOutput::updateBatteryDisplay();
@@ -955,7 +975,7 @@ boolean MorsePreferences::setupPreferences(uint8_t atMenu) {
 
 //// new way of displaying it
 
-void MorsePreferences::displayKeyerPreferencesMenu(prefPos pos) {
+void MorsePreferences::displayKeyerPreferencesMenu(prefPos pos, boolean announce) {
   const int maxLength = 14;
 
   // MorseOutput::clearDisplay();
@@ -991,7 +1011,7 @@ void MorsePreferences::displayKeyerPreferencesMenu(prefPos pos) {
   itemLine += emptyLine.substring(0,maxLength - itemLine.length());
   MorseOutput::printOnScroll(1, BOLD, 0, itemLine);
   // a11y: the heading + value are announced together by displayValueLine() (called next).
-  displayValueLine(pos, itemLine, false);
+  displayValueLine(pos, itemLine, false, true, announce);
 }
 
 /// posKochFilter, posLoraBand, posLoraQRG, posSnapRecall, posSnapStore,  posVAdjust, posScreen, posHwConf
@@ -1060,7 +1080,7 @@ static void announceValue(prefPos pos, const String& valueLine, boolean withTota
 }
 #endif
 
-void MorsePreferences::displayValueLine(prefPos pos, const String& itemText, boolean jsonOnly, boolean withHeading) {
+void MorsePreferences::displayValueLine(prefPos pos, const String& itemText, boolean jsonOnly, boolean withHeading, boolean announce) {
     String valueLine; valueLine.reserve(20);
     const String emptyLine = "                    ";
     const int maxLength = 14;
@@ -1074,7 +1094,7 @@ void MorsePreferences::displayValueLine(prefPos pos, const String& itemText, boo
     if (pos == posMaxSequence && pliste[pos].value == 0)                  /// we do a "mapping" for 0 here
         valueLine = "Unlimited";
 #ifdef CONFIG_AUDIO_A11Y
-    if (!jsonOnly) {                                                      // a11y: heading+value on entry, value-only when adjusting
+    if (!jsonOnly && announce) {                                          // a11y: heading+value on entry, value-only when adjusting
         a11yFresh = true;
         if (withHeading) {                                               // extraItems have no pliste[] entry:
             MorseVoice::announce(pos <= posSerialOut                     // they announce by their display label
@@ -1086,10 +1106,13 @@ void MorsePreferences::displayValueLine(prefPos pos, const String& itemText, boo
         announceValue(pos, valueLine, withHeading);                      // totals on entry only
     }
 #endif
+    if (pos == posEchoThinkTime)                                        // display-only unit suffix: kept out of the
+        valueLine += "s";                                                // a11y announce above so it still speaks the bare
+                                                                           // number, matching the existing integer atoms
     if (valueLine.length() < maxLength)             // guard: for a >14-char value the subtraction wraps
         valueLine += emptyLine.substring(0,maxLength - valueLine.length());  // unsigned and appends the whole emptyLine
 
-    if (protocolActive()) {
+    if (protocolActive() && announce) {
       jsonValueLine = valueLine;
       jsonValueLine.trim();
       switch (pos) {
@@ -1550,10 +1573,8 @@ boolean MorsePreferences::adjustKeyerPreference(prefPos pos) {        /// rotati
                       temp = val + maxi + vstep + t*vstep;
                       pliste[pos].value = temp % (maxi + vstep);
 #ifdef CONFIG_TFT
-                      if (pos == posTheme) {
-                           MorseOutput::setTheme(MorsePreferences::pliste[posTheme].value); 
-                            MorseOutput::refreshDisplay();
-                        }
+                      if (pos == posTheme)          // live preview: setTheme() requests the repaint below
+                          MorseOutput::setTheme(MorsePreferences::pliste[posTheme].value);
 #endif
                       if (pliste[pos].value != 0) {
                         if (pos == posWordDoubler) {
@@ -1701,6 +1722,8 @@ boolean MorsePreferences::adjustKeyerPreference(prefPos pos) {        /// rotati
             displayValueLine(pos, itemLine, false, false);   /// now display the value (value only, no heading)
 	          MorseOutput::refreshDisplay(); // update the display
          }      // end if     (checkEncoder)
+         if (MorseOutput::takeRepaintRequest())     // theme changed: the Theme preview above, or the config tool
+             repaintPreferencesScreen(pos, true);
         #ifdef CONFIG_BATTERY_ICON
          MorseOutput::checkPowerpathState();
          MorseOutput::updateBatteryDisplay();
@@ -2192,6 +2215,9 @@ void MorsePreferences::writePreferences(const char* repository) {
                     // Re-wrapping in place isn't worth it for a settings change;
                     // start the scroll area clean instead.
                     MorseOutput::clearScroll();
+                    // ... which blanks whatever the screen's owner had drawn there (the
+                    // menu entries, a preference), at the old geometry - so it redraws.
+                    MorseOutput::requestRepaint();
                     break;
 #endif
             }     // end of "special cases"
@@ -2202,6 +2228,24 @@ void MorsePreferences::writePreferences(const char* repository) {
   pref.end();
 }
 
+
+uint8_t MorsePreferences::defaultValue[posSerialOut + 1];
+
+// Copy the compile-time defaults out of pliste[] before anything overwrites
+// them. Must be called from setup() *after* the factory-reset check and
+// *before* readPreferences(): at that one moment pliste[].value still holds
+// its initialiser (or the value resetDefaults() just put back), and a few
+// lines later it holds the user's stored setting instead. resetDefaults()
+// below depends on exactly the same property.
+//
+// Costs posSerialOut+1 bytes of BSS and leaves the pliste[] table untouched,
+// which is the point: a parallel const array or an extra struct field would be
+// one more positional list to keep in step with the prefPos enum (CLAUDE.md
+// rule 10), and that list has drawn blood before.
+void MorsePreferences::captureDefaults() {
+  for (uint8_t i = 0; i <= posSerialOut; ++i)
+      defaultValue[i] = pliste[i].value;
+}
 
 void MorsePreferences::resetDefaults() {
   pref.begin("morserino", false);                // open namespace in read/write mode

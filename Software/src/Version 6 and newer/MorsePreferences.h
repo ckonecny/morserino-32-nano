@@ -205,6 +205,14 @@ namespace MorsePreferences
 
   extern parameter pliste[];
 
+  // The compile-time default of every pliste[] entry, taken at boot by
+  // captureDefaults(). pliste[].value itself cannot answer this at runtime:
+  // readPreferences() overwrites it with the stored setting a few lines into
+  // setup(), and from then on the default is gone. Indexed by prefPos, same
+  // 0..posSerialOut range as pliste[].
+  extern uint8_t defaultValue[];
+  void captureDefaults();
+
   extern  prefPos keyerOptions[];
   extern  prefPos generatorOptions[];
   extern  prefPos playerOptions[];
@@ -245,8 +253,10 @@ namespace MorsePreferences
   boolean  recallSnapshot();
   boolean storeSnapshot(uint8_t);
   boolean setupPreferences(uint8_t);
-  void displayKeyerPreferencesMenu(prefPos);
-  void displayValueLine(prefPos pos, const String& itemText, boolean jsonOnly, boolean withHeading = true);
+  // announce = false: a repaint of what is already on screen (e.g. after a theme change) - drawn
+  // the same, but neither spoken nor sent to a protocol client, since the entry did not change.
+  void displayKeyerPreferencesMenu(prefPos, boolean announce = true);
+  void displayValueLine(prefPos pos, const String& itemText, boolean jsonOnly, boolean withHeading = true, boolean announce = true);
   String getValueLine(prefPos);
   int getValue(prefPos);
   boolean adjustKeyerPreference(prefPos);

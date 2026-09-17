@@ -61,9 +61,15 @@ devdocs/
 │   └── PROTOCOL_1.4_DESIGN.md    ·   the bulk preference read, sized and decided
 ├── qso-bot/                      ← QSO Bot behaviour review + improvement backlog
 │   └── IMPROVEMENT_PLAN.md       ·   already-implemented vs. genuine remaining gaps
+├── sidetone-upstreaming/         ← what of the vendored cw-i2s-sidetone goes to Hari
+│   └── HANDOFF.md                ·   START HERE — the divergence, costs, suggested order
+├── snapshot-bundles/             ← importing several snapshots at once (deferred)
+│   ├── HANDOFF.md                ·   START HERE — decided vs open, where the code is
+│   └── DESIGN_NOTES.md           ·   what a snapshot really holds, and the traps
 └── ultimatic/                    ← Ultimatic keyer mode vs. the 1955 original
-    ├── FINDINGS.md               ·   the QST source, the bug, the fix, bench to-do
-    └── keyer_sim.cpp             ·   host-side keyer simulator, old vs. new logic
+    ├── FINDINGS.md               ·   the QST source, the point-6 bug, the fix
+    ├── FOLLOWUP_CURTIS_B.md      ·   Ultimatic vs. the Curtis-B timing (decision pending)
+    └── keyer_sim.cpp             ·   host-side keyer simulator; `scan` runs the follow-up
 ```
 
 ## Conventions

@@ -252,6 +252,13 @@ boolean DIT_LAST_CLOSED = false; // was the most recent paddle *closure* the dit
                                  // Ultimatic tracks this live, on every rising edge - not to be
                                  // confused with the DIT_LAST latch bit, which says which
                                  // *element* was sent last. See doPaddleIambic().
+boolean ultDitMemory = false, ultDahMemory = false;
+                                 // Ultimatic memories. Armed by a paddle *closure* and consumed
+                                 // when an element starts, so a closure guarantees its element
+                                 // even if the paddle is long released by the time the next
+                                 // element is chosen (QST 5/1955 points 1 and 7). The DIT_L/DAH_L
+                                 // latches cannot do this job: they are sampled, and only inside
+                                 // the Curtis-B / Latency windows.
 unsigned int ditLength ;        // dit length in milliseconds - 100ms = 60bpm = 12 wpm
 unsigned int dahLength ;        // dahs are 3 dits long
 KEYERSTATES keyerState;
@@ -308,6 +315,13 @@ uint8_t wordCounter = 0;                          // for maxSequence
 uint16_t errCounter = 0;                          // counting errors in echo trainer mode
 boolean stopFlag = false;                         // for maxSequence
 boolean echoStop = false;                         // for maxSequence
+
+// Deadline for the end-of-pass summary ("N errs (M wds)") that maxSequence puts on the
+// status line, or STOP_SUMMARY_IDLE when it is not showing. It used to be held there by a
+// plain delay(5000) - see checkStopFlag().
+#define STOP_SUMMARY_MS   5000
+#define STOP_SUMMARY_IDLE 0
+unsigned long stopSummaryUntil = STOP_SUMMARY_IDLE;
 String lastWord = "";                             // for maxSequence
 
 unsigned long genTimer;                           // timer used for generating morse code in trainer mode
@@ -893,6 +907,14 @@ delay(VEXT_SETTLE_MS);   // let the panel supply rail settle before the ST7789 r
     }
   }
 
+  // Last chance to see the compile-time defaults: readPreferences() below
+  // replaces pliste[].value with the stored settings. Taking a copy here is
+  // what lets GET config/<name> and GET configs/details report a "default"
+  // alongside the current value. Correct on both paths above -- either
+  // resetDefaults() has just restored the defaults, or nothing has touched
+  // pliste[] since it was initialised.
+  MorsePreferences::captureDefaults();
+
   // read preferences from non-volatile storage
   // if version cannot be read, we have a new ESP32 and need to write the preferences first
 
@@ -1173,9 +1195,10 @@ void displayStartUp(uint16_t volt) {
     s += shortDate(COMPILEDATE);
   }
 
-  // forceNormal: the small font is ASCII-only (IntelOneMono12ptAscii.h) and
-  // can't render the "(c)" in COPYRIGHT - keep this one splash screen at the
-  // normal size regardless of the Font Size preference.
+  // forceNormal: keep this one splash screen at the normal size regardless of
+  // the Font Size preference. Originally this was required - the small font was
+  // declared ASCII-only and could not render COPYRIGHT's "(c)" at all - and it
+  // is now a plain size choice, since IntelOneMono12ptScroll.h covers it.
   MorseOutput::printOnScroll(0, REGULAR, 0, s, false, true);
   MorseOutput::printOnScroll(1, REGULAR, 0, COPYRIGHT, false, true);
 
@@ -1334,7 +1357,10 @@ void loop() {
                           break;
       case echoTrainer:                             ///// check stopFlag triggered by maxSequence
                           checkStopFlag();
-                          if (!genIsActive&& (leftKey  || rightKey))   {                       // touching a paddle starts  the generation of code
+                                                                       // ... but not while the end-of-pass summary is still up: the
+                                                                       // delay() that used to hold it there also swallowed the paddle,
+                                                                       // and the operator is meant to get their five seconds to read it
+                          if (!genIsActive && stopSummaryUntil == STOP_SUMMARY_IDLE && (leftKey  || rightKey))   {   // touching a paddle starts  the generation of code
                               // for debouncing:
                               while (checkPaddles() )
                                   ;                                                           // wait until paddles are released
@@ -1390,6 +1416,8 @@ if (morseState == morseKeyer &&
         MorseMenu::menu_();                                       // long click exits current mode and goes to top menu
         return;
     }
+    if (MorseOutput::takeRepaintRequest())                        // theme changed underneath us, e.g. from the config tool
+        repaintModeScreen();
   // check buttons
     Buttons::modeButton.Update();
     Buttons::volButton.Update();
@@ -1484,6 +1512,10 @@ if (morseState == morseKeyer &&
        case 2:  MorsePreferences::setupPreferences(MorsePreferences::menuPtr);                               // double click shows the preferences menu (true would select a specific option only)
                 MorseOutput::clearDisplay();                                 // restore display
                 updateTopLine();
+                MorseOutput::refreshScrollArea(MorseOutput::relPos);         // clearDisplay() wiped the screen, but not
+                                                                              // textBuffer - repaint what was already
+                                                                              // there instead of leaving it blank until
+                                                                              // new output is generated on resume
                 if (morseState == morseGenerator || morseState == echoTrainer)
                     stopFlag = true;                                  // we stop what we had been doing
                 else
@@ -1591,11 +1623,25 @@ void checkStopFlag() {
       if (morseState == echoTrainer) {
         MorseOutput::clearStatusLine();
         MorseOutput::printOnStatusLine( true, 0, String(errCounter) + " errs (" + String(wordCounter-2) + " wds)" );
-        delay(5000);
+        wordCounter = 1; errCounter = 0;
+        // Hold the summary on a deadline rather than delay(5000)ing through it. That delay
+        // kept loop() out of the button poll for a full five seconds, so FN and the ENCODER
+        // were dead while the operator sat looking at the result - and because ClickButton
+        // samples the pin inside Update(), a press that began *and* ended inside the gap
+        // left no trace at all, while one still held when it ended was acted on late. Same
+        // defect, and the same remedy, as the pauses around the verdict in echoTrainerEval()
+        // - see the note there. Reported by Rodjo, HB9FUR. The five seconds are unchanged:
+        // this is a control-flow change, not a timing change.
+        stopSummaryUntil = millis() + STOP_SUMMARY_MS;
+        return;                     // the "continue with paddle" prompt follows when it expires
       }
       wordCounter = 1; errCounter = 0;
       //if (MorsePreferences::fileWordPointer > 1)
       //  --MorsePreferences::fileWordPointer;          // avoid that a word is being skipped after interruption
+      showPausePrompt(true);
+    }
+    else if (stopSummaryUntil != STOP_SUMMARY_IDLE && millis() >= stopSummaryUntil) {
+      stopSummaryUntil = STOP_SUMMARY_IDLE;             // summary has had its five seconds
       showPausePrompt(true);
     }
 }
@@ -1612,15 +1658,44 @@ void cleanStartSettings() {
     echoTrainerState = START_ECHO;
     generatorState = KEY_UP;
     keyerState = IDLE_STATE;
+    ultDitMemory = ultDahMemory = false;         // a mode abandoned mid-character must not leave
+                                                 // an Ultimatic memory pending for the next one
     interWordTimer = 4294967000;                 // almost the biggest possible unsigned long number :-) - do not output a space at the beginning
     pausePromptDeadline = PAUSE_PROMPT_IDLE;     // no longer paused - the reappear check is gated on !genIsActive
                                                   // anyway, but disarm it too so it starts fresh next time we pause
     genTimer = millis()-1;                       // we will be at end of KEY_DOWN when called the first time, so we can fetch a new word etc...
     errCounter = wordCounter = 0;                // reset word and error counter for maxSequence
+    stopSummaryUntil = STOP_SUMMARY_IDLE;        // a pass started from the button while the summary was
+                                                 // still up must not have it expire into a "paused" prompt
+                                                 // five seconds into the new pass
     startFirst = true;
     autoStop = nextword;                             // for autoStop mode
     keyOut(false, true, 0, 0);
     updateTopLine();
+}
+
+/// Ultimatic element selection, as described in QST 5/1955 ("Summary of Actions of the Keys").
+/// Every other keyer mode decides from the sampled DIT_L/DAH_L latches, which are only written
+/// inside the Curtis-B and Latency windows and stay set once written. Ultimatic cannot use them:
+/// a closure inside a window would be missed (point 1/7), and a latch left over from a paddle that
+/// has since been released would key an element the operator is no longer asking for (point 4).
+/// So we decide from the memories plus the *live* paddle levels, and then express the answer in
+/// the latch bits, so the state machine below can carry on unchanged.
+void ultimaticSelect(boolean dit, boolean dah) {
+    keyerControl &= ~(DIT_L + DAH_L);                       // the sampled latches do not apply here
+    if (ultDitMemory && ultDahMemory)                       // both memories: the later closure wins
+        keyerControl |= (DIT_LAST_CLOSED ? DIT_L : DAH_L);
+    else if (ultDitMemory)                                  // one memory: it is guaranteed its element
+        keyerControl |= DIT_L;
+    else if (ultDahMemory)
+        keyerControl |= DAH_L;
+    else if (dit && dah)                                    // nothing pending, both still held:
+        keyerControl |= (DIT_LAST_CLOSED ? DIT_L : DAH_L);  // the one closed last keeps control
+    else if (dit)                                           // nothing pending, one still held
+        keyerControl |= DIT_L;
+    else if (dah)
+        keyerControl |= DAH_L;
+    // nothing pending and nothing held: no bit set, and the character ends
 }
 
 ///////////////////
@@ -1660,9 +1735,33 @@ boolean doPaddleIambic (boolean dit, boolean dah) {
   /// other paddle held down all the while - re-arms its memory and seizes control of the sequencer.
   /// On a simultaneous closure the dah wins here, while IDLE_STATE below starts with the dit: that
   /// is the long-standing M32 behaviour for a squeeze (one dit, then a series of dahs).
+  /// The same edges arm the Ultimatic memories. The one thing we do not want to take for a
+  /// closure is contact bounce on the paddle that is currently sending - a paddle that chatters,
+  /// or a touch pad that loses contact for an instant, would otherwise insert an element nobody
+  /// asked for. So a re-closure of that paddle is ignored if it was open for less than
+  /// CHATTER_GUARD_MS. That is short enough that no deliberate movement can fall inside it
+  /// (at 60 WpM a dit is 20 ms, so even a fast flick is several times longer), and the opposite
+  /// paddle is never filtered at all.
+  /// This deliberately does *not* use the Latency preference. Latency is a window measured from
+  /// the end of an element, and at 35-40 WpM it is long enough to cover a genuine re-tap of the
+  /// same paddle: at Latency 7/8 a second, fully intended tap 18-30 ms after the first was being
+  /// swallowed. Found by Pawel, SP5DNA, on the air - the simulator only showed it once he said
+  /// where to look. Ultimatic therefore ignores Latency, as it ignores the CurtisB percentages.
+  static const long CHATTER_GUARD_MS = 5;
   static boolean prevDit = false, prevDah = false;
-  if (dit && !prevDit)  DIT_LAST_CLOSED = true;
-  if (dah && !prevDah)  DIT_LAST_CLOSED = false;
+  static long ditOpenedAt = 0, dahOpenedAt = 0;
+  if (!dit && prevDit) ditOpenedAt = millis();          // note when each paddle went open
+  if (!dah && prevDah) dahOpenedAt = millis();
+  if (dit && !prevDit) {
+      DIT_LAST_CLOSED = true;
+      boolean bounce = (millis() - ditOpenedAt) < CHATTER_GUARD_MS;
+      if (!(bounce && (keyerControl & DIT_LAST)))    ultDitMemory = true;
+  }
+  if (dah && !prevDah) {
+      DIT_LAST_CLOSED = false;
+      boolean bounce = (millis() - dahOpenedAt) < CHATTER_GUARD_MS;
+      if (!(bounce && !(keyerControl & DIT_LAST)))   ultDahMemory = true;
+  }
   prevDit = dit; prevDah = dah;
 
 
@@ -1704,7 +1803,9 @@ boolean doPaddleIambic (boolean dit, boolean dah) {
             }
         }
         else {
-           if (echoTrainerState == GET_ANSWER && millis() > genTimer) {
+           // Echo Think T. extends only this deadline for starting the answer. It must not go
+           // into genTimer: generateCW() waits for genTimer again before the next prompt.
+           if (echoTrainerState == GET_ANSWER && millis() > genTimer + MorsePreferences::pliste[posEchoThinkTime].value * 1000UL) {
             echoTrainerState = EVAL_ANSWER;
          }
          return false;                // we return false if there was no paddle press in IDLE STATE - Arduino can do other tasks for a bit
@@ -1716,6 +1817,7 @@ boolean doPaddleIambic (boolean dit, boolean dah) {
             if ( MorsePreferences::pliste[posACS].value > 0 && (millis() <= acsTimer))  // if we do automatic character spacing, and haven't waited for (3 or whatever) dits...
               break;
             clearPaddleLatches();                           // always clear the paddle latches at beginning of new element
+            ultDitMemory = false;                           // ... and consume the Ultimatic dit memory
             keyerControl |= DIT_LAST;                        // remember that we process a DIT
 
             ktimer = ditLength;                              // prime timer for dit
@@ -1737,6 +1839,7 @@ boolean doPaddleIambic (boolean dit, boolean dah) {
             if ( MorsePreferences::pliste[posACS].value > 0 && (millis() <= acsTimer))  // if we do automatic character spacing, and haven't waited for 3 dits...
               break;
             clearPaddleLatches();                          // clear the paddle latches
+            ultDahMemory = false;                          // ... and consume the Ultimatic dah memory
             keyerControl &= ~(DIT_LAST);                    // clear 'dit last' latch  - we are not processing a DIT
 
             ktimer = dahLength;
@@ -1798,6 +1901,8 @@ boolean doPaddleIambic (boolean dit, boolean dah) {
             else {
                 updatePaddleLatch(dit, dah);          // latch paddle state while between elements
                 if (millis() >= ktimer) {               // at end of INTER-ELEMENT
+                    if (MorsePreferences::pliste[posCurtisMode].value == ULTIMATIC)
+                        ultimaticSelect(dit, dah);      // Ultimatic decides its own way, see above
                     switch(keyerControl) {
                           case 3:                                         // both paddles are latched
                           case 7:
@@ -1808,11 +1913,11 @@ boolean doPaddleIambic (boolean dit, boolean dah) {
                                                         else                                // but when first element was a DAH
                                                                setDAHstate();            // the next element is a DAH again!
                                                         break;
-                                      case ULTIMATIC:   if (DIT_LAST_CLOSED)                 // control belongs to the paddle
-                                                               setDITstate();            // closed last: it keeps sending its
-                                                        else                                // own element type until it is
-                                                               setDAHstate();            // released or the other one is flicked
-                                                        break;
+                                      case ULTIMATIC:   if (DIT_LAST_CLOSED)                 // not normally reached: ultimaticSelect()
+                                                               setDITstate();            // sets at most one latch bit. Kept so that
+                                                        else                                // the mode still behaves if that ever
+                                                               setDAHstate();            // changes, rather than falling through to
+                                                        break;                              // the iambic default below.
                                       default:          if (keyerControl & DIT_LAST)     // Iambic: last element was a dit - this is case 7, really
                                                             setDAHstate();               // next element will be a DAH
                                                         else                                // and this is case 3 - last element was a DAH
@@ -1856,6 +1961,7 @@ boolean doPaddleIambic (boolean dit, boolean dah) {
                                                                               // use the extended time in echo trainer mode to allow longer space between characters,
                                                                               // like in listening
                                    keyerControl = 0;                          // clear all latches completely before we go to IDLE
+                                   ultDitMemory = ultDahMemory = false;       // nothing may be left pending either
                           break;
                     } // switch keyerControl : evaluation of flags
                 }
@@ -2220,7 +2326,13 @@ String getRandomCall(int maxLength) {
     int pos = 0;
     uint8_t contMask;
     uint8_t contPref = MorsePreferences::pliste[posCallContinent].value;
-    bool vkzlOnly = (contPref == 7);
+    // "max. 3 characters" asks for one of the handful of 3-character calls, which
+    // exist only in a few NA/EU prefixes - so every region setting is deliberately
+    // ignored in that case (contMask = CONT_ALL below, and the manual says so).
+    // VK/ZL follows the same rule instead of being a silent exception: there is no
+    // 3-character VK or ZL call, so honouring the region here would either produce
+    // a call that breaks the length the user asked for, or nothing at all.
+    bool vkzlOnly = (contPref == 7) && (maxLength != 1);
     // Get filter settings
     if (maxLength != 1)     /// means the max call length is not 3 
         contMask = vkzlOnly ? CONT_OC : getContinentMask(contPref);
@@ -2231,6 +2343,52 @@ String getRandomCall(int maxLength) {
     // (weight 1 = unseen/theoretical prefix)
     uint8_t minWeight = commonOnly ? 81 : 0;  // Claude recommended 2 but that gave way too many rare prefixes.
  
+    // --- VK/ZL custom generator ---
+    if (vkzlOnly) {
+        // VK/ZL weighted area and suffix generator
+        // Overall: 85% VK, 15% ZL
+        bool isVK = (random(0, 100) < 85);
+        int area;
+        if (isVK) {
+            // VK area weights: 0=1,1=10,2=20,3=20,4=15,5=10,6=5,7=15,8=3,9=1
+            int r = random(0, 100);
+            if      (r < 1)  area = 0;
+            else if (r < 11) area = 1;
+            else if (r < 31) area = 2;
+            else if (r < 51) area = 3;
+            else if (r < 66) area = 4;
+            else if (r < 76) area = 5;
+            else if (r < 81) area = 6;
+            else if (r < 96) area = 7;
+            else if (r < 99) area = 8;
+            else             area = 9;
+            call[pos++] = 'v';
+            call[pos++] = 'k';
+        } else {
+            // ZL area weights: 1=35,2=35,3=20,4=10
+            int r = random(0, 100);
+            if      (r < 35) area = 1;
+            else if (r < 70) area = 2;
+            else if (r < 90) area = 3;
+            else             area = 4;
+            call[pos++] = 'z';
+            call[pos++] = 'l';
+        }
+        call[pos++] = '0' + area;
+        // Suffix: 30% two letters, 70% three letters
+        int suffixLen = (random(0, 10) < 3) ? 2 : 3;
+        for (int i = 0; i < suffixLen; i++)
+            call[pos++] = 'a' + random(0, 26);
+        // Terminate the string, as both other return paths do. This was a raw NUL
+        // *byte* in the source rather than the escape - it compiled to the right
+        // value, but it made the whole file binary to grep, diff and any editor
+        // that declines to open it.
+        call[pos] = '\0';
+        lastGeneratedCallContinent = CONT_OC;
+        lastGeneratedCallCqZone    = isVK ? 29 : 32;
+        return String(call);
+    }
+
     // --- Weighted random prefix selection (two-pass) ---
  
     // Pass 1: sum weights of matching entries
@@ -2244,7 +2402,6 @@ String getRandomCall(int maxLength) {
         if (!(cont & contMask)) continue;
         if (weight < minWeight) continue;
         if ((int)strlen(pfxBuf) > maxPfxLen) continue;
-        if (vkzlOnly && strncmp(pfxBuf, "VK", 2) != 0 && strncmp(pfxBuf, "ZL", 2) != 0) continue;
         totalWeight += weight;
     }
  
@@ -2272,7 +2429,6 @@ String getRandomCall(int maxLength) {
         if (!(cont & contMask)) continue;
         if (weight < minWeight) continue;
         if ((int)strlen(pfxBuf) > maxPfxLen) continue;
-        if (vkzlOnly && strncmp(pfxBuf, "VK", 2) != 0 && strncmp(pfxBuf, "ZL", 2) != 0) continue;
         cumulative += weight;
         if (cumulative > pick) {
             chosen = i;
@@ -2490,7 +2646,7 @@ void generateCW () {          ////// this is called from loop() (frequently!)  a
                                                     displayGeneratedMorse(INVERSE_REGULAR, ">");
                                                 }
                                                 ++repeats;
-                                                genTimer = millis() + 1400 + interCharacterSpace + interWordSpace / 3;
+                                                genTimer = millis() + 1400 + interCharacterSpace + interWordSpace / 3;   // Echo Think T. is added in doPaddleIambic()'s GET_ANSWER deadline only
  
                                                 // Apply response speed limit
                                                 uint8_t speedMaxIdx = MorsePreferences::pliste[posEchoSpeedMax].value;
@@ -2881,7 +3037,7 @@ void displayDecodedMorse(String symbol, boolean keyed) {
     }
     String tmp_str = symbol;
     if (MorsePreferences::pliste[posOutputCase].value) {
-        tmp_str.toUpperCase();
+        toUpperCaseM32(tmp_str);            // ASCII *and* the decoder's ä ö ü
     }
     // M6: keyed + decoded characters are CW transcription. Weight follows the
     // device convention "incoming CW = bold, your own keying = regular":
@@ -2931,7 +3087,7 @@ void displayGeneratedMorse(FONT_ATTRIB style, const String& s) {
 #endif
     if (MorsePreferences::pliste[posOutputCase].value) {
         String upper = s;
-        upper.toUpperCase();
+        toUpperCaseM32(upper);
         MorseOutput::printToScroll(style, upper, true, encoderState == scrollMode);
         SerialOutMorse(upper, 0b100);
 #ifdef CONFIG_BLUETOOTH_KEYBOARD
@@ -3071,6 +3227,20 @@ void updateTopLine() {
   // 3rd state (showed the volume bar as owned while character was actually selected).
   MorseOutput::displayVolume(encoderState != volumeSettingMode, MorsePreferences::sidetoneVolume);                                     // sidetone volume
   MorseOutput::refreshDisplay();
+}
+
+
+// Repaint a running mode's screen in place when it went stale underneath the mode - the theme
+// (or Font Size) was changed from the config tool: the same restore as after the preferences
+// menu, plus the scroll bar when the encoder is scrolling. A full-width status message (the pause
+// prompt, the echo summary) gives way to the normal top line, as on a speed or volume change.
+// Used by loop() and the QSO Bot.
+void repaintModeScreen() {
+  MorseOutput::clearDisplay();
+  updateTopLine();
+  MorseOutput::refreshScrollArea(MorseOutput::relPos);
+  if (encoderState == scrollMode)
+    MorseOutput::displayScrollBar(true);
 }
 
 
@@ -4304,6 +4474,25 @@ String cleanUpText(String text) {
 // for long file player text). New code: zero heap work in the loop, one
 // allocation at return. Also replaced indexOf() with strchr() which is faster.
  
+
+// Uppercase for the "Output Case" preference. Arduino's String::toUpperCase() is
+// byte-wise ASCII, so the CW decoder's German umlauts - ä ö ü, two bytes each in
+// UTF-8 - came through untouched while everything around them was uppercased.
+// Their capitals share the same 0xC3 lead byte and sit 0x20 below the lower-case
+// second byte (ä = C3 A4 -> Ä = C3 84), so one pass over the pairs fixes it.
+// ß is deliberately left alone: its capital is "SS", which would change the
+// string's length, and the decoder never produces it in the first place.
+void toUpperCaseM32(String &s) {
+    s.toUpperCase();
+    for (unsigned int i = 0; i + 1 < s.length(); ++i) {
+        if ((uint8_t) s.charAt(i) == 0xC3) {
+            uint8_t c = (uint8_t) s.charAt(i + 1);
+            if (c == 0xA4 || c == 0xB6 || c == 0xBC)      // ä ö ü
+                s.setCharAt(i + 1, (char) (c - 0x20));    // -> Ä Ö Ü
+            ++i;                                          // skip the pair's second byte
+        }
+    }
+}
 
 String utf8umlaut(const String& s) {    // Replacement table: pattern → replacement.
     // Ordered so that longer patterns are checked first where ambiguity

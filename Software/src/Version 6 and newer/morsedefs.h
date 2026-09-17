@@ -41,7 +41,7 @@ const char* const PROJECTNAME = "Morserino-32";
 const char* const COPYRIGHT = "\xc2\xa9 2018-2026";  // © in UTF-8
 
 #define VERSION_MAJOR 9
-#define VERSION_MINOR 0
+#define VERSION_MINOR 1
 #define VERSION_PATCH 0
 
 #define BETA true
@@ -470,7 +470,7 @@ enum prefPos : uint8_t {
                 posEchoToneShift, posInterWordSpace, posInterCharSpace, posRandomOption,                      // 8
                 posRandomLength, posRandomBoost, posCallLength, posCallContinent, posCallCommon, posAbbrevLength, posWordLength,               // 12
                 posGeneratorDisplay, posWordDoubler, posEchoDisplay, posEchoRepeats,  posEchoConf,            // 16
-                posKeyExternalTx, posLoraCwTransmit, posGoertzelBandwidth, posSpeedAdapt, posEchoSpeedMax,                    // 21
+                posKeyExternalTx, posLoraCwTransmit, posGoertzelBandwidth, posSpeedAdapt, posEchoSpeedMax, posEchoThinkTime,  // 21
                 posKochSeq, posCarouselStart, posLatency, posRandomFile, posExtAudioOnDecode, posTimeOut,     // 25
                 posQuickStart, posOutputCase, posAutoStop, posMaxSequence, posLoraChannel,                    // 31
 #ifdef CONFIG_BLUETOOTH_KEYBOARD

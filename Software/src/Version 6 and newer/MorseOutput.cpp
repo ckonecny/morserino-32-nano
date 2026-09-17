@@ -58,7 +58,7 @@ LGFX display;
 #include "m32logo_aa.h"          // pre-rendered anti-aliased boot-splash logo (white-on-black)
 #endif
 #ifdef CONFIG_SCROLL_FONT_SIZE
-#include "IntelOneMono12ptAscii.h"   // ASCII-range small scroll font (see that file for why)
+#include "IntelOneMono12ptScroll.h"   // small scroll font, range-limited for the metric (see that file)
 #endif
 DisplayWrapper display;
 #endif
@@ -89,12 +89,13 @@ static inline uint16_t stringWidth(const String& s) {
 /// Select the font for the scroll area's *default* size (i.e. printOnScroll()
 /// callers that don't pass small=true): the Font Size preference's Normal/
 /// Small choice on the M32 Pocket (non-Accessibility), or always the normal
-/// 15pt font everywhere else. Small uses the ASCII-range
-/// IntelOneMono12ptAscii.h variant rather than the IntelOneMono 12pt used for
+/// 15pt font everywhere else. Small uses the range-limited
+/// IntelOneMono12ptScroll.h variant rather than the IntelOneMono 12pt used for
 /// a caller-forced small=true (e.g. a narrow IP-address line) - see that
-/// header for why. forceNormal overrides the preference (used by the boot
-/// splash, whose (c) glyph falls outside the small ASCII font's declared
-/// range). Everywhere else (OLED, and the Accessibility Edition) this is
+/// header for why. forceNormal overrides the preference; the boot splash uses
+/// it to keep its two lines at one size. (It used to be needed there because
+/// the small font could not render COPYRIGHT's (c) at all - that is no longer
+/// so.) Everywhere else (OLED, and the Accessibility Edition) this is
 /// always the normal (large) font; posScrollFont doesn't exist in those
 /// builds. Shared by setDefaultScrollFont() and printOnScroll() so the two
 /// font-selection rules can't drift apart.
@@ -103,7 +104,7 @@ static inline void scrollFont(boolean bold, boolean forceNormal) {
   if (forceNormal || !MorsePreferences::pliste[posScrollFont].value)
     display.setFont(bold ? DialogInput_bold_15 : DialogInput_plain_15);
   else
-    display.setFont(bold ? &IntelOneMono_Bold12pt8b_Ascii : &IntelOneMono_Regular12pt8b_Ascii);
+    display.setFont(bold ? &IntelOneMono_Bold12pt8b_Scroll : &IntelOneMono_Regular12pt8b_Scroll);
 #else
   display.setFont(bold ? DialogInput_bold_15 : DialogInput_plain_15);
 #endif
@@ -760,6 +761,9 @@ namespace {
     // sitting past its own narrow width - see printOnStatusLine().
     uint16_t statusLineCacheWidth = 0;
 
+    // See MorseOutput::requestRepaint() / takeRepaintRequest().
+    bool   repaintPending = false;
+
     // Paint the full-width white background, respecting the battery icon's
     // right-side reserved area. Extracted so clearStatusLine() and the
     // deferred-clear path inside printOnStatusLine() stay in sync.
@@ -798,6 +802,7 @@ void MorseOutput::initDisplay()
   statusClearPending = true;
   statusLineCache    = "";
   statusLineCacheWidth = 0;
+  repaintPending     = false;   // the screen was just wiped; its owner redraws it
 }
 
 
@@ -810,6 +815,7 @@ static uint16_t currentMorseColor = 0xFFFF;
 static uint16_t currentOkColor    = 0x07E0;
 static uint16_t currentErrColor   = 0xF800;
 static uint16_t currentThemeBg    = 0x0000;
+static uint8_t  currentTheme      = 0xFF;     // none yet: the first setTheme() at boot is a change
 
 void MorseOutput::setTheme (uint8_t theme) {
   //DEBUG("Theme: " + String(theme));
@@ -819,6 +825,20 @@ void MorseOutput::setTheme (uint8_t theme) {
   currentOkColor    = MorsePreferences::themeList[theme].ok;
   currentErrColor   = MorsePreferences::themeList[theme].err;
   currentThemeBg    = MorsePreferences::themeList[theme].background;
+  // This only sets the colours for what is drawn next - everything already on screen keeps the
+  // old ones. So the status-line cache must stop vouching for "the same text is already there"
+  // (it is, but in the wrong colours - that fast path is why the top line stayed old while the
+  // rest of the menu turned), the battery icon needs drawing again, and the screen's owner has
+  // to repaint the rest. Only on an actual change: game exit re-applies the current theme every
+  // time, and a repaint then would just flash.
+  if (theme != currentTheme) {
+    currentTheme    = theme;
+    statusLineCache = "";
+#ifdef CONFIG_BATTERY_ICON
+    batteryDisplayDirty = true;
+#endif
+    requestRepaint();
+  }
 }
 
 #endif
@@ -832,6 +852,7 @@ void MorseOutput::clearDisplay() {
     statusClearPending = true;
     statusLineCache    = "";
     statusLineCacheWidth = 0;
+    repaintPending     = false;   // nothing stale is left: the caller draws on a clean screen
 #ifdef CONFIG_BATTERY_ICON
     batteryDisplayDirty = true;
     batteryIconVisible = false;
@@ -841,6 +862,16 @@ void MorseOutput::clearDisplay() {
 void MorseOutput::refreshDisplay()
 {
   display.display();
+}
+
+void MorseOutput::requestRepaint() {
+  repaintPending = true;
+}
+
+boolean MorseOutput::takeRepaintRequest() {
+  boolean pending = repaintPending;
+  repaintPending = false;
+  return pending;
 }
 
 uint8_t MorseOutput::getScrollTop() {
@@ -2524,13 +2555,13 @@ void MorseOutput::pwmClick(unsigned int volume) {                        /// gen
     #endif
 }
 
-// Switches the tone generator to the rich (3rd/5th/7th harmonic) timbre for the OK/ERR
-// signals and puts it back to a pure sine on the way out, however the block is left. The
-// CW sidetone must always be a clean sine -- never leave this on.
+// Switches the tone generator to a voiced timbre for the OK/ERR signals and puts it back
+// to a pure sine on the way out, however the block is left. The CW sidetone must always be
+// a clean sine -- never leave this on.
 #ifdef CONFIG_SOUND_I2S
-struct RichTone {
-    RichTone()  { sidetone.setRichTimbre(true);  }
-    ~RichTone() { sidetone.setRichTimbre(false); }
+struct SignalTone {
+    explicit SignalTone(ComplexRotorSine::Timbre t) { sidetone.setTimbre(t); }
+    ~SignalTone() { sidetone.setTimbre(ComplexRotorSine::Timbre::Sine); }
 };
 #endif
 
@@ -2544,13 +2575,15 @@ void MorseOutput::soundSignalOK() {
     pwmNoTone(MorsePreferences::sidetoneVolume);
 #else
     if (! sidetone.playSPIFFSFile("/sounds/success.mp3")) {
-        // Rising, a fifth above the classic pair (440/587 -> 660/880). See soundSignalERR().
-        RichTone rich;
-        pwmTone(660, MorsePreferences::sidetoneVolume, false);
+        // Rising, on the classic M32's pair. The V9 beta had to transpose these up a fifth
+        // (660/880) to be heard at all; the voiced timbre carries them now, so the classic
+        // pitch is back. See soundSignalERR() and ComplexRotorSine.
+        SignalTone voiced(ComplexRotorSine::Timbre::Trumpet);
+        pwmTone(440, MorsePreferences::sidetoneVolume, false);
         delay(97);
         pwmNoTone(MorsePreferences::sidetoneVolume);
         delay(20);
-        pwmTone(880, MorsePreferences::sidetoneVolume, false);
+        pwmTone(587, MorsePreferences::sidetoneVolume, false);
         delay(193);
         pwmNoTone(MorsePreferences::sidetoneVolume);
     }
@@ -2568,19 +2601,18 @@ void MorseOutput::soundSignalERR() {
   pwmNoTone(MorsePreferences::sidetoneVolume);
 #else
   if (! sidetone.playSPIFFSFile("/sounds/error.mp3")) {
-     // FALLING, like the classic M32 above -- this branch used to rise (311 -> 330), the
-     // same direction as the OK signal, which is exactly backwards for an error. Restored
-     // to the classic's interval (366 -> 330, a whole tone down, short then long), a fifth
-     // up: 549 -> 495. The fifth and the rich timbre are both about audibility, not taste:
-     // as a pure sine at 311 Hz this signal measured ~10 dB below the CW sidetone on the
-     // Pocket's speaker, because de-clipping the codec (PR #208) removed the harmonics it
-     // had been relying on. Together they win back ~7 dB without raising the pitch further.
-     RichTone rich;
-     pwmTone(549, MorsePreferences::sidetoneVolume, false);
+     // FALLING, like the classic M32 above: a whole tone down, short then long. As a pure
+     // sine this measured ~17 dB below the CW sidetone on the Pocket's speaker, because
+     // de-clipping the codec (PR #208) removed the harmonics it had been relying on. The
+     // V9 beta bought that back with a square-ish timbre and a transposition up a fifth
+     // (549/495), and overshot: harsh, and louder than the CW itself. The voiced timbre
+     // wins the audibility back on its own, so the pitch is the classic M32's again.
+     SignalTone voiced(ComplexRotorSine::Timbre::Bassoon);
+     pwmTone(366, MorsePreferences::sidetoneVolume, false);
      delay(97);
      pwmNoTone(MorsePreferences::sidetoneVolume);
      delay(20);
-     pwmTone(495, MorsePreferences::sidetoneVolume, false);
+     pwmTone(330, MorsePreferences::sidetoneVolume, false);
      delay(193);
      pwmNoTone(MorsePreferences::sidetoneVolume);
   }

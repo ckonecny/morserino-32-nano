@@ -309,6 +309,17 @@ static void a11yForgetMenuContext() { a11yMenuParent = a11yLastEntry = 0xFF; }
 
 
 void MorseMenu::menu_() {
+   // Swallow whatever button click got us here (typically the long-press that
+   // exits a running mode). ClickButton fires a long click while the button is
+   // still held and then leaves `clicks` frozen at -1 until the release
+   // resolves ~20-270ms later (see ClickButton.cpp:97-133). The setup work
+   // below (WiFi tear-down, volume write, ...) easily outlasts that window
+   // with no intervening Update() call, so without this the menu loop's own
+   // first read(s) of `clicks` see the same stale -1 and misread it as "go up
+   // one level" - repeatedly, once per loop iteration, until it decays. That
+   // walks newMenuPtr up several levels at once instead of landing on the
+   // mode we just left (mirrors the setupPreferences() exit fix above).
+   Buttons::modeButton.clicks = 0;
    // Memory-clearing reboot is now reactive (see MorseGameMode::allocate)
    // rather than preemptive on WiFi Trx exit. The heap stays fragmented
    // after WiFi Trx, but that only matters if the user immediately starts
@@ -412,6 +423,12 @@ void MorseMenu::menu_() {
             MorseMenu::menuDisplay(disp);
         }
 #endif
+        // The theme (or Font Size) changed underneath the menu - typically from the config
+        // tool, whose PUT config is handled in serialEvent() above - so repaint in place.
+        if (MorseOutput::takeRepaintRequest()) {
+            MorseOutput::clearDisplay();
+            MorseMenu::menuDisplay(disp, false);
+        }
         if (quickStart) {
             quickStart = false;
             command = 1;
@@ -442,6 +459,13 @@ void MorseMenu::menu_() {
         else {
             Buttons::modeButton.Update();
             command = Buttons::modeButton.clicks;
+            // Swallow immediately after capturing: menuDisplay() below can be slow enough
+            // (esp. on TFT) that the release happens before the loop's next Update() call
+            // gets to self-correct a lingering -1/1 (ClickButton.cpp:97-133), so a single
+            // long press could otherwise be re-read as -1 on the following iteration and
+            // walk newMenuPtr up an extra level (e.g. Koch Trainer::CW Generator::Random
+            // jumping straight to Koch Trainer instead of stopping one level up).
+            Buttons::modeButton.clicks = 0;
         }
 
 #ifdef CONFIG_AUDIO_A11Y
@@ -530,7 +554,7 @@ checkShutDown(false);                  // check for time out
 } // end menu_()
 
 
-void MorseMenu::menuDisplay(uint8_t ptr) {
+void MorseMenu::menuDisplay(uint8_t ptr, boolean announce) {
   //DEBUG("Level: " + (String) menuNav [ptr][naviLevel] + " " + menuText[ptr]);
   uint8_t oneUp = menuNav[ptr][naviUp];
   uint8_t twoUp = menuNav[oneUp][naviUp];
@@ -573,6 +597,8 @@ void MorseMenu::menuDisplay(uint8_t ptr) {
             MorseOutput::printOnScroll(0, BOLD, 0, menuText[ptr]);
             break;
   }
+  if (!announce)
+      return;
 #ifdef CONFIG_AUDIO_A11Y
   // a11y: speak the highlighted entry - preceded by the branch it hangs off whenever the
   // listener cannot already know that branch. A sighted user reads it off the two lines above

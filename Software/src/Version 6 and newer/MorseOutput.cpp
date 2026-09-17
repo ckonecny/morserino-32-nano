@@ -58,7 +58,11 @@ LGFX display;
 #include "m32logo_aa.h"          // pre-rendered anti-aliased boot-splash logo (white-on-black)
 #endif
 #ifdef CONFIG_SCROLL_FONT_SIZE
+#ifdef SCROLL_FONT_COMPACT_UMLAUTS
+#include "IntelOneMono12ptScrollCompact.h"   // same font at a 26 px pitch (generated, see that file)
+#else
 #include "IntelOneMono12ptScroll.h"   // small scroll font, range-limited for the metric (see that file)
+#endif
 #endif
 DisplayWrapper display;
 #endif

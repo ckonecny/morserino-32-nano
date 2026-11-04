@@ -19,7 +19,7 @@ The case is 3D-printed; here it is next to a matchbox for scale, and opened up:
 | 2 | PCM5102A I²S DAC module **with 3.5 mm headphone jack** | 1 | purple board, pins SCK / BCK / DIN / LCK / GND / VIN — the headphone jack is on this board |
 | 3 | 3.5 mm stereo jack, PCB type, 5 pins (teal) | 1 | the key / paddle jack |
 | 4 | Pushbutton (round, panel mount) | 1 | the external **FN** button, on top of the case |
-| 5 | LiPo cell 3.7 V, 800 mAh, type 752248, with JST-PH plug | 1 | optional — the Nano also runs from USB |
+| 5 | [LiPo cell 3.7 V, 800 mAh, type 752248, with JST-PH plug](https://amzn.eu/d/00VhmSqJ) | 1 | optional — the Nano also runs from USB |
 | 6 | Slide switch, PCB mount, ON-ON, 8.6×4.3×4 mm, angled ([BerryBase](https://www.berrybase.at/schiebeschalter-printmontage-on-on-2-stellig-8.6x4.3x4mm-gewinkelt)) | 1 | battery on/off switch, in the **+** lead of the LiPo |
 | 7 | Hook-up wire, heat-shrink, Kapton tape, a little foam | – | see below |
 | 8 | 3D-printed case | 1 | *(print files still to be added)* |

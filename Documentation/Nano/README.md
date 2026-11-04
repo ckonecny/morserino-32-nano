@@ -24,7 +24,7 @@ The case is 3D-printed; here it is next to a matchbox for scale, and opened up:
 | 7 | Hook-up wire, heat-shrink, Kapton tape, a little foam | – | – | – | see assembly notes |
 | 8 | 3D-printed case | 1 | – | – | *(print files still to be added)* |
 
-Prices are those of the listed pack, as given by the author (Nov 2026); several parts come in packs, so a single Nano costs less than the sum when you already own spares. Check the polarity of the LiPo's connector against the Feather before plugging it in.
+Prices are those of the listed pack, as given by the author (Nov 2026); several parts come in packs, so a single Nano costs less than the sum when you already own spares. **Check the polarity of the LiPo's connector against the Feather before plugging it in – a reversed battery destroys the board (see [Battery and power switch](#battery-and-power-switch)).**
 
 | Feather and DAC | The teal key jack | The battery switch |
 |---|---|---|
@@ -84,6 +84,17 @@ the photo, not measured. If the paddles come out swapped, exchange the two wires
 or use the swap option in the keyer preferences.
 
 ### Battery and power switch
+
+> ⚠️ **IMPORTANT – check the battery plug polarity before the first connection!**
+> JST-PH LiPo cells are **not** all wired the same way, and the Feather's
+> battery connector is **not** protected against reverse polarity. Compare the
+> battery's red (+) and black (−) wires with the **+ / −** marking at the
+> Feather's battery connector, with a multimeter if in doubt. In the author's
+> build the two pins in the plug had to be **swapped** (pulled out of the
+> housing and re-inserted the other way round). A reversed battery destroys the
+> board, and in the worst case also causes a problem on the USB port of the
+> PC/Mac it is connected to. Never plug in USB and battery until the polarity
+> is verified.
 
 The LiPo's JST-PH plug goes into the Feather's battery connector. The slide
 switch interrupts the red (+) wire; the black (−) wire goes straight through.

@@ -51,6 +51,9 @@ evolves; see the commit history for what has been adapted.
 - Parts list, pin assignment and wiring diagram: **[Documentation/Nano](Documentation/Nano/README.md)**
 - Short version: Feather + PCM5102A on three I²S pins (GPIO 12 / 14 / 16), paddle jack on
   GPIO 9 / 10, FN button on GPIO 5.
+- ⚠️ **Check the LiPo plug polarity before connecting the battery.** JST-PH cells are wired
+  differently by different vendors; a reversed battery destroys the board and can harm the
+  USB port of your computer. Details in the [wiring page](Documentation/Nano/README.md#battery-and-power-switch).
 
 ## Flash the firmware
 

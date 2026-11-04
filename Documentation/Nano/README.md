@@ -56,9 +56,10 @@ no speaker.
 ![DAC board, back](images/dac-back.jpg)
 ![DAC board, front](images/dac-front.jpg)
 
-> **To confirm:** the four solder pads **H1L–H4L** on the back of the DAC board
-> (they select filter, de-emphasis, soft-mute and I²S format). State here how
-> they are set on your board.
+**Solder pads H1L–H4L** (filter, de-emphasis, soft-mute and I²S format) on the
+back of the DAC board: leave them **exactly as delivered** — all four are
+fitted at the factory and the Nano works with them untouched. No soldering on
+these pads is needed.
 
 ### Key / paddle and FN button
 

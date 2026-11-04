@@ -34,14 +34,31 @@ transceiver mode, QSO Bot, practice statistics, WiFi, Bluetooth (keyboard and
 BLE serial), the serial protocol, snapshots and preferences. The scroll area
 has 3 lines (4 with the small font); the boot logo says "Nano".
 
-**Not available on the Nano:**
+**Not available on the Nano:** see the limitations below.
 
-- the four **CW games** (Morse Invaders, Fight the Pileup, Radio Cave, Morsel) —
-  their screen layout needs more than 135 px of height
-- the **CW Decoder** — the board has no audio input
-- **LoRa**
-- speaker, microphone / audio in, rotary encoder, touch paddles
-- the Accessibility Edition (spoken UI)
+## Limitations compared to the Pocket
+
+The Nano is a compact DIY build, not a full replacement for the Pocket. Please
+read this before you build one:
+
+| Area | Pocket | Nano | Why |
+|---|---|---|---|
+| **Audio output** | speaker + headphones | headphones only, no speaker | the PCM5102A DAC module only has a headphone output |
+| **Audio input** | microphone / line in | none | no audio-in hardware on the board |
+| **CW Decoder** | yes (decodes audio) | **not available** | needs the audio input |
+| **CW games** (Morse Invaders, Fight the Pileup, Radio Cave, Morsel) | yes | **not available** | screen layout needs more than 135 px of height |
+| **LoRa** | optional | **not available** | no LoRa module |
+| **Rotary encoder** | yes | none; 3 buttons simulate it (up / down / click) | different board, no encoder fitted |
+| **Touch paddles** | yes | disabled; external paddle jack only | no touch pads |
+| **Display** | 320×170 | 240×135, fewer text lines (3, or 4 with the small font) | built-in TFT of the Feather |
+| **Accessibility Edition** (spoken UI) | yes | not available | needs the audio hardware and voice store |
+| **Transmitter keying output** | on the PCB | not wired in the standard build | GPIO 11 is free; an optional keying stage is shown in the wiring diagram |
+| **Web installer / ready-made firmware** | yes (morserino.info) | no, build and flash yourself with PlatformIO | the upstream installer does not cover the Nano |
+| **Support** | upstream project | this fork only | not an official product |
+
+Everything else (Keyer, Generator, Echo Trainer, Koch Trainer, iCW / external
+transceiver mode, QSO Bot, statistics, WiFi, Bluetooth keyboard and BLE serial,
+serial protocol, snapshots, preferences) is shared with the Pocket firmware.
 
 Because the Nano shares the Pocket code, features may still change as upstream
 evolves; see the commit history for what has been adapted.

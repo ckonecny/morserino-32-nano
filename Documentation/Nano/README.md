@@ -16,15 +16,18 @@ differs from the Morserino-32 Pocket, see the [main README](../../README.md).
 
 *Work in progress — quantities and sources are provisional.*
 
-| # | Part | Qty | Notes |
-|---|---|---|---|
-| 1 | [Adafruit ESP32-S3 Reverse TFT Feather](https://www.adafruit.com/product/5691) (#5691) | 1 | MCU, 240×135 TFT, 3 buttons, USB-C, LiPo charger, MAX17048 fuel gauge |
-| 2 | PCM5102A I²S DAC breakout | 1 | headphone audio; no codec init needed |
-| 3 | 3.5 mm stereo jack (headphones) | 1 | connected to the DAC board |
-| 4 | 3.5 mm stereo jack (key / paddle) | 1 | tip = dit, ring = dah, sleeve = GND |
-| 5 | Tactile push button | 1 | the external **FN** button |
-| 6 | LiPo cell, 3.7 V, JST-PH | 1 | optional — runs from USB without it |
-| 7 | Wire, pin headers, enclosure | – | to be specified |
+| # | Part | Qty | Source | Notes |
+|---|---|---|---|---|
+| 1 | Adafruit ESP32-S3 Reverse TFT Feather (#5691) | 1 | [Adafruit](https://www.adafruit.com/product/5691) | MCU, 240×135 TFT, 3 buttons, USB-C, LiPo charger, MAX17048 fuel gauge |
+| 2 | *(description to be added)* | ? | [Amazon.de B0CSS7DX1T](https://www.amazon.de/dp/B0CSS7DX1T) | |
+| 3 | *(description to be added)* | ? | [Amazon.de B0F7LL4S8Z](https://www.amazon.de/dp/B0F7LL4S8Z) | |
+| 4 | *(description to be added)* | ? | [Amazon.de B0GS9WTZ6Q](https://www.amazon.de/dp/B0GS9WTZ6Q) | |
+| 5 | *(description to be added)* | ? | [Amazon.de B07XWYHPZH](https://www.amazon.de/dp/B07XWYHPZH) | |
+| 6 | Slide switch, PCB mount, ON-ON, 2-position, 8.6×4.3×4 mm, angled | ? | [BerryBase](https://www.berrybase.at/schiebeschalter-printmontage-on-on-2-stellig-8.6x4.3x4mm-gewinkelt) | purpose / wiring to be added |
+
+Still needed according to the wiring below, unless covered by the items above:
+PCM5102A I²S DAC board, 2× 3.5 mm stereo jack (headphones, key/paddle), tactile
+button (FN), LiPo cell with JST-PH connector (optional), wire and enclosure.
 
 *(to be completed: exact part numbers, prices, enclosure / 3D-print files)*
 

@@ -13,24 +13,18 @@ The case is 3D-printed; here it is next to a matchbox for scale, and opened up:
 
 ## Bill of material
 
-| # | Part | Qty | Notes |
-|---|---|---|---|
-| 1 | [Adafruit ESP32-S3 Reverse TFT Feather](https://www.adafruit.com/product/5691) (#5691) | 1 | MCU, 240×135 TFT, 3 buttons (D0/D1/D2), USB-C, LiPo charger, MAX17048 fuel gauge |
-| 2 | PCM5102A I²S DAC module **with 3.5 mm headphone jack** | 1 | purple board, pins SCK / BCK / DIN / LCK / GND / VIN — the headphone jack is on this board |
-| 3 | 3.5 mm stereo jack, PCB type, 5 pins (teal) | 1 | the key / paddle jack |
-| 4 | Pushbutton (round, panel mount) | 1 | the external **FN** button, on top of the case |
-| 5 | [LiPo cell 3.7 V, 800 mAh, type 752248, with JST-PH plug](https://amzn.eu/d/00VhmSqJ) | 1 | optional — the Nano also runs from USB |
-| 6 | Slide switch, PCB mount, ON-ON, 8.6×4.3×4 mm, angled ([BerryBase](https://www.berrybase.at/schiebeschalter-printmontage-on-on-2-stellig-8.6x4.3x4mm-gewinkelt)) | 1 | battery on/off switch, in the **+** lead of the LiPo |
-| 7 | Hook-up wire, heat-shrink, Kapton tape, a little foam | – | see below |
-| 8 | 3D-printed case | 1 | *(print files still to be added)* |
+| # | Part | Qty | Source | Notes |
+|---|---|---|---|---|
+| 1 | Adafruit ESP32-S3 Reverse TFT Feather — 4 MB Flash, 2 MB PSRAM, STEMMA QT (#5691) | 1 | [Adafruit](https://www.adafruit.com/product/5691) | MCU, 240×135 TFT, 3 buttons (D0/D1/D2), USB-C, LiPo charger, MAX17048 fuel gauge |
+| 2 | PCM5102 I²S DAC module with 3.5 mm jack (pHAT format) | 1 | [Amazon.de](https://www.amazon.de/dp/B0F7LL4S8Z) (pack of 3) | purple board, pins SCK / BCK / DIN / LCK / GND / VIN; **the headphone jack is on this board** |
+| 3 | Stereo jack 3.5 mm, PJ-320A, 4 pin, green/teal | 1 | [Amazon.de](https://www.amazon.de/dp/B0GS9WTZ6Q) (pack of 10) | the key / paddle jack |
+| 4 | Tactile push button 6×6×5 mm, 2 pin | 1 | [Amazon.de](https://www.amazon.de/dp/B07XWYHPZH) (pack of 100) | the external **FN** button, on top of the case |
+| 5 | LiPo cell 3.7 V, 800 mAh, type 752248, 2-pin PH 2.0 mm connector | 1 | [Amazon.de](https://www.amazon.de/dp/B0CSS7DX1T) | optional — the Nano also runs from USB |
+| 6 | Slide switch, PCB mount, ON-ON, 8.6×4.3×4 mm, angled | 1 | [BerryBase](https://www.berrybase.at/schiebeschalter-printmontage-on-on-2-stellig-8.6x4.3x4mm-gewinkelt) | battery on/off switch, in the **+** lead of the LiPo |
+| 7 | Hook-up wire, heat-shrink, Kapton tape, a little foam | – | – | see assembly notes |
+| 8 | 3D-printed case | 1 | – | *(print files still to be added)* |
 
-**Purchase links** (still to be matched to the parts above):
-[Adafruit #5691](https://www.adafruit.com/product/5691) ·
-[Amazon.de B0CSS7DX1T](https://www.amazon.de/dp/B0CSS7DX1T) ·
-[Amazon.de B0F7LL4S8Z](https://www.amazon.de/dp/B0F7LL4S8Z) ·
-[Amazon.de B0GS9WTZ6Q](https://www.amazon.de/dp/B0GS9WTZ6Q) ·
-[Amazon.de B07XWYHPZH](https://www.amazon.de/dp/B07XWYHPZH) ·
-[BerryBase slide switch](https://www.berrybase.at/schiebeschalter-printmontage-on-on-2-stellig-8.6x4.3x4mm-gewinkelt)
+Check the polarity of the LiPo's connector against the Feather before plugging it in.
 
 | Feather and DAC | The teal key jack | The battery switch |
 |---|---|---|

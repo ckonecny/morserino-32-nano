@@ -20,7 +20,7 @@ The case is 3D-printed; here it is next to a matchbox for scale, and opened up:
 | 3 | Stereo jack 3.5 mm, PJ-320A, 4 pin, green/teal | 1 | [Amazon.de](https://www.amazon.de/dp/B0GS9WTZ6Q) (pack of 10) | 5 EUR per pack | the key / paddle jack |
 | 4 | Tactile push button 6×6×5 mm, 2 pin | 1 | [Amazon.de](https://www.amazon.de/dp/B07XWYHPZH) (pack of 100) | 5 EUR per pack | the external **FN** button, on top of the case |
 | 5 | LiPo cell 3.7 V, 800 mAh, type 752248, 2-pin PH 2.0 mm connector | 1 | [Amazon.de](https://www.amazon.de/dp/B0CSS7DX1T) | 10 EUR | optional — the Nano also runs from USB |
-| 6 | Slide switch, PCB mount, ON-ON, 8.6×4.3×4 mm, angled | 1 | [BerryBase](https://www.berrybase.at/schiebeschalter-printmontage-on-on-2-stellig-8.6x4.3x4mm-gewinkelt) | *(to be added)* | battery on/off switch, in the **+** lead of the LiPo |
+| 6 | Slide switch, PCB mount, ON-ON, 8.6×4.3×4 mm, angled | 1 | [BerryBase](https://www.berrybase.at/schiebeschalter-printmontage-on-on-2-stellig-8.6x4.3x4mm-gewinkelt) | 0.65 EUR | battery on/off switch, in the **+** lead of the LiPo |
 | 7 | Hook-up wire, heat-shrink, Kapton tape, a little foam | – | – | – | see assembly notes |
 | 8 | 3D-printed case | 1 | – | – | *(print files still to be added)* |
 

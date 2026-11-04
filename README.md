@@ -12,7 +12,7 @@ product, and it is not supported by the original project — please report
 Nano problems here, not there.
 
 ![Morserino-32 Nano](Documentation/Nano/images/nano.jpg)
-*(photo to be added)*
+*The Nano in its 3D-printed case. Wiring and parts list: [Documentation/Nano](Documentation/Nano/README.md).*
 
 ## What is different from the Pocket?
 
@@ -21,9 +21,9 @@ Nano problems here, not there.
 | Board | custom ESP32-S3 PCB (kit) | Adafruit ESP32-S3 Reverse TFT Feather (#5691) + PCM5102A DAC |
 | Display | LCD, 320×170 | built-in TFT, 240×135 (fewer text lines) |
 | Input | rotary encoder, buttons | the 3 built-in buttons simulate the encoder (up / down / click) + 1 external **FN** button |
-| Sound | speaker and headphones | **headphones only** (I²S DAC, no speaker amplifier) |
+| Sound | speaker and headphones | **headphones only** (PCM5102A DAC module with its own headphone jack, no speaker) |
 | Key / paddle | jack, touch paddles | jack only, touch paddles disabled |
-| Battery | ADC | MAX17048 fuel gauge on the Feather |
+| Battery | ADC | LiPo 800 mAh with on/off slide switch; MAX17048 fuel gauge on the Feather |
 | LoRa | optional | not available |
 | Firmware env | `pocketwroom` | `nano-adafruit-feather` |
 

@@ -31,10 +31,10 @@
     <text x="32" y="200">DIN</text>
     <text x="32" y="220">VIN</text>
     <text x="32" y="240">GND</text>
-    <text x="32" y="262">SCK, FMT, FLT, DEMP → GND</text>
+    <text x="32" y="262">SCK → GND (wire jumper)</text>
   </g>
-  <text x="32" y="276" font-size="11" fill="#444">XSMT → 3V3 (un-mute)</text>
-  <text x="120" y="300" text-anchor="middle" font-size="12" fill="#444">→ 3.5 mm headphone jack</text>
+  <text x="32" y="276" font-size="11" fill="#444">pads H1L–H4L: see text</text>
+  <text x="120" y="300" text-anchor="middle" font-size="12" fill="#444">built-in 3.5 mm headphone jack</text>
 
   <line x1="220" y1="155" x2="300" y2="135" stroke="#b45309" stroke-width="2"/>
   <line x1="220" y1="175" x2="300" y2="165" stroke="#b45309" stroke-width="2"/>
@@ -67,6 +67,6 @@
   <!-- Battery -->
   <rect x="640" y="110" width="200" height="90" rx="8" fill="#ede9fe" stroke="#6d28d9" stroke-width="2"/>
   <text x="740" y="138" text-anchor="middle" font-weight="bold">LiPo battery</text>
-  <text x="740" y="160" text-anchor="middle" font-size="13">JST-PH connector on the Feather</text>
-  <text x="740" y="180" text-anchor="middle" font-size="12" fill="#444">charged via USB-C, gauge on board</text>
+  <text x="740" y="160" text-anchor="middle" font-size="13">3.7 V 800 mAh, JST-PH</text>
+  <text x="740" y="180" text-anchor="middle" font-size="12" fill="#444">slide switch in the + lead</text>
 </svg>

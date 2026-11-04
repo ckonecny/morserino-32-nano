@@ -65,10 +65,10 @@ these pads is needed.
 
 | Function | Feather pin | GPIO | Wiring |
 |---|---|---|---|
-| Paddle left (dit) | D9 | 9 | key jack → pin |
-| Paddle right (dah) | D10 | 10 | key jack → pin |
-| Key jack, common | GND | – | key jack sleeve |
-| **FN** button | D5 | 5 | button between pin and GND |
+| Paddle left (dit) | D9 | 9 | key jack, light-blue wire |
+| Paddle right (dah) | D10 | 10 | key jack, brown wire |
+| Key jack, common | GND | – | key jack sleeve, black wire |
+| **FN** button | D5 | 5 | button between pin (brown wire) and GND (black wire) |
 | Keyer out (optional) | D11 | 11 | not used in this build |
 
 No external resistors are needed: the firmware enables the internal pull-ups,
@@ -76,7 +76,12 @@ and the key just shorts the pin to GND.
 
 ![Wiring overview, photo](images/wiring-overview.jpg)
 
-> **To confirm:** which jack contact (tip / ring) goes to D9 and D10.
+On the PJ-320A the three wired pads sit in a row: black (GND) on the outer pad,
+brown (D10) in the middle, light-blue (D9) on the third; the fourth pad, next to
+it, stays unused (it is the jack's switch contact). This matches the usual
+convention of tip = dit and ring = dah, but the contact names are inferred from
+the photo, not measured. If the paddles come out swapped, exchange the two wires
+or use the swap option in the keyer preferences.
 
 ### Battery and power switch
 

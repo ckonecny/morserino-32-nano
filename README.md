@@ -1,9 +1,103 @@
-# Morserino-32
-Morserino-32 multi-functional Morse code machine, based on ESP32
+# Morserino-32 Nano
 
-Here on GitHub you will find both software and documentation of both hardware and software.
+**A compact, DIY variant of the [Morserino-32 Pocket](https://github.com/oe1wkl/Morserino-32)
+that runs on different hardware: an Adafruit ESP32-S3 Reverse TFT Feather
+plus a small I²S DAC board.**
 
-## User Manual
+This repository is a fork of Willi Kraml's (OE1WKL) Morserino-32 project. The
+firmware is the Pocket firmware, ported to the Feather. All credit for the
+Morserino itself goes to Willi and the Morserino-32 contributors; this fork only
+adds the board support described below. It is **not** an official Morserino
+product, and it is not supported by the original project — please report
+Nano problems here, not there.
+
+![Morserino-32 Nano](Documentation/Nano/images/nano.jpg)
+*The Nano in its 3D-printed case. Wiring and parts list: [Documentation/Nano](Documentation/Nano/README.md).*
+
+## What is different from the Pocket?
+
+| | Morserino-32 Pocket | Morserino-32 **Nano** |
+|---|---|---|
+| Board | custom ESP32-S3 PCB (kit) | Adafruit ESP32-S3 Reverse TFT Feather (#5691) + PCM5102A DAC |
+| Display | LCD, 320×170 | built-in TFT, 240×135 (fewer text lines) |
+| Input | rotary encoder, buttons | the 3 built-in buttons simulate the encoder (up / down / click) + 1 external **FN** button |
+| Sound | speaker and headphones | **headphones only** (PCM5102A DAC module with its own headphone jack, no speaker) |
+| Key / paddle | jack, touch paddles | jack only, touch paddles disabled |
+| Battery | ADC | LiPo 800 mAh with on/off slide switch; MAX17048 fuel gauge on the Feather |
+| LoRa | optional | not available |
+| Firmware env | `pocketwroom` | `nano-adafruit-feather` |
+
+## What is (and is not) ported
+
+**Works:** CW Keyer, CW Generator, Echo Trainer, Koch Trainer, iCW / external
+transceiver mode, QSO Bot, practice statistics, WiFi, Bluetooth (keyboard and
+BLE serial), the serial protocol, snapshots and preferences. The scroll area
+has 3 lines (4 with the small font); the boot logo says "Nano".
+
+**Not available on the Nano:** see the limitations below.
+
+## Limitations compared to the Pocket
+
+The Nano is a compact DIY build, not a full replacement for the Pocket. Please
+read this before you build one:
+
+| Area | Pocket | Nano | Why |
+|---|---|---|---|
+| **Audio output** | speaker + headphones | headphones only, no speaker | the PCM5102A DAC module only has a headphone output |
+| **Audio input** | microphone / line in | none | no audio-in hardware on the board |
+| **CW Decoder** | yes (decodes audio) | **not available** | needs the audio input |
+| **CW games** (Morse Invaders, Fight the Pileup, Radio Cave, Morsel) | yes | **not available** | screen layout needs more than 135 px of height |
+| **LoRa** | optional | **not available** | no LoRa module |
+| **Rotary encoder** | yes | none; 3 buttons simulate it (up / down / click) | different board, no encoder fitted |
+| **Touch paddles** | yes | disabled; external paddle jack only | no touch pads |
+| **Display** | 320×170 | 240×135, fewer text lines (3, or 4 with the small font) | built-in TFT of the Feather |
+| **Accessibility Edition** (spoken UI) | yes | not available | needs the audio hardware and voice store |
+| **Transmitter keying output** | on the PCB | not wired in the standard build | GPIO 11 is free; an optional keying stage is shown in the wiring diagram |
+| **Web installer / ready-made firmware** | yes (morserino.info) | no, build and flash yourself with PlatformIO | the upstream installer does not cover the Nano |
+| **Support** | upstream project | this fork only | not an official product |
+
+Everything else (Keyer, Generator, Echo Trainer, Koch Trainer, iCW / external
+transceiver mode, QSO Bot, statistics, WiFi, Bluetooth keyboard and BLE serial,
+serial protocol, snapshots, preferences) is shared with the Pocket firmware.
+
+Because the Nano shares the Pocket code, features may still change as upstream
+evolves; see the commit history for what has been adapted.
+
+## Build it yourself
+
+- Parts list, pin assignment and wiring diagram: **[Documentation/Nano](Documentation/Nano/README.md)**
+- Short version: Feather + PCM5102A on three I²S pins (GPIO 12 / 14 / 16), paddle jack on
+  GPIO 9 / 10, FN button on GPIO 5.
+- ⚠️ **Check the LiPo plug polarity before connecting the battery.** JST-PH cells are wired
+  differently by different vendors; a reversed battery destroys the board and can harm the
+  USB port of your computer. Details in the [wiring page](Documentation/Nano/README.md#battery-and-power-switch).
+
+## Flash the firmware
+
+Build with [PlatformIO](https://platformio.org/) from `Software/src/`:
+
+```bash
+pio run -e nano-adafruit-feather
+pio run -e nano-adafruit-feather -t upload
+```
+
+The Feather enters its bootloader automatically over USB-C (1200 bps touch);
+if not, hold **D0** while pressing reset. The upstream web installer at
+morserino.info installs the original Morserino devices, **not** the Nano.
+
+## Using it
+
+The Nano behaves like the Pocket, so the Pocket documentation applies — with
+the differences above (the three buttons replace the encoder: D0 = right,
+D2 = left, D1 = click; FN is the external button).
+
+---
+
+# Upstream: Morserino-32
+
+*Everything below is the original project README, kept for reference.*
+
+## User Manual (Pocket)
 
 There is one manual per Morserino, so you only read what applies to your device.
 

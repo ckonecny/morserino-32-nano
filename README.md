@@ -14,6 +14,10 @@ Nano problems here, not there.
 ![Morserino-32 Nano](Documentation/Nano/images/nano.jpg)
 *The Nano in its 3D-printed case. Wiring and parts list: [Documentation/Nano](Documentation/Nano/README.md).*
 
+<p align="center"><img src="Documentation/Nano/images/case-size.jpg" alt="Morserino-32 Nano next to a matchbox" width="360"></p>
+
+*Size comparison: the Nano next to a standard matchbox. It is only slightly larger than the box.*
+
 ## What is different from the Pocket?
 
 | | Morserino-32 Pocket | Morserino-32 **Nano** |
